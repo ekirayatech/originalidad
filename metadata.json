@@ -1,0 +1,6 @@
+{
+  "name": "Verificador de Originalidad - Colegio Bilingüe Ekirayá",
+  "description": "Sistema institucional de verificación de originalidad y detección de patrones de IA con embudo de colores y similitud, análisis en memoria del navegador y cumplimiento de normativas colombianas para el Colegio Bilingüe Ekirayá.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
