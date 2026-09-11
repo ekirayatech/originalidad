@@ -16,50 +16,7 @@ import { EKIRAYA_SOURCE_COLORS } from '../data/defaultCorpus';
 // =========================================================================
 
 export const AI_MARKERS_ES = [
-  // Conclusiones y cierres típicos de LLMs en español
-  'en conclusión, se puede afirmar',
-  'en conclusión podemos decir',
-  'en conclusión,',
-  'en conclusión',
-  'a modo de conclusión',
-  'en conclusión podemos',
-  'en resumen, se puede',
-  'en resumen,',
-  'en resumen',
-  'en síntesis,',
-  'en síntesis',
-  'en resumidas cuentas',
-  'en última instancia',
-  'al fin y al cabo',
-  'a fin de cuentas',
-  'en definitiva,',
-  'en definitiva',
-  
-  // Fórmulas de apertura y transición discursiva
-  'en primer lugar',
-  'en primera instancia',
-  'en segundo lugar',
-  'por otra parte',
-  'por un lado',
-  'por otro lado',
-  'por ende,',
-  'por ende',
-  'por consiguiente',
-  'por lo tanto,',
-  'por lo tanto',
-  'en este sentido',
-  'en este orden de ideas',
-  'en este contexto',
-  'en el contexto actual',
-  'en el panorama actual',
-  'bajo esta perspectiva',
-  'de igual manera',
-  'de igual modo',
-  'de la misma manera',
-  'asimismo,',
-  'asimismo',
-  
-  // Fórmulas de énfasis y cliché académico en español
+  // Fórmulas de énfasis y clichés estilísticos distintivos de LLMs en español
   'juega un papel fundamental',
   'desempeña un papel fundamental',
   'juega un papel crucial',
@@ -67,240 +24,80 @@ export const AI_MARKERS_ES = [
   'juega un rol fundamental',
   'juega un rol crucial',
   'desempeña un rol crucial',
-  'es importante destacar que',
-  'es fundamental destacar que',
-  'es crucial tener en cuenta',
-  'es menester subrayar que',
-  'es menester destacar',
-  'es imperativo reconocer',
-  'es imperativo destacar',
-  'cabe resaltar que',
-  'cabe destacar que',
-  'cabe señalar que',
-  'cabe mencionar que',
-  'vale la pena destacar',
-  'vale la pena mencionar',
-  'vale la pena señalar',
-  'resulta evidente que',
-  'resulta imperioso',
-  'resulta indispensable',
-  'resulta fundamental',
-  'es de vital importancia',
-  'es de suma importancia',
-  'no cabe duda de que',
-  'se erige como',
-  'se posiciona como',
   'un testimonio palpable',
-  'un testimonio de',
+  'un testimonio elocuente',
   'un hito trascendental',
   'un pilar fundamental',
-  'un impacto significativo',
   'un impacto multifacético',
   'un impacto transformador',
   'visión holística',
   'enfoque holístico',
-  'de manera integral',
-  'de forma integral',
-  'un amplio abanico',
-  'un sinnúmero de',
   'un tapiz de',
-  'a lo largo de la historia',
-  'a través de los años',
-  'a medida que avanzamos',
-  'en la era digital',
-  'en un mundo cada vez más',
-  'hoy en día,',
-  'en la actualidad,',
-  'a nivel global',
-  'en constante evolución',
-  'desafíos y oportunidades',
-  'luces y sombras',
-  'sentar las bases',
-  'abrir la puerta a',
-  'un catalizador de',
-  'un catalizador para',
-  'en consonancia con',
-  'en aras de'
+  'rico tapiz',
+  'en un mundo cada vez más interconectado',
+  'en el cambiante panorama',
+  'paisaje en constante evolución',
+  'es menester subrayar que',
+  'es menester destacar',
+  'es imperativo reconocer',
+  'resulta imperioso',
+  'un amplio abanico de posibilidades',
+  'un sinnúmero de oportunidades',
+  'abrir la puerta a un sinnúmero',
+  'un catalizador para el cambio',
+  'un catalizador transformador',
+  'desentrañar las complejidades',
+  'sentar las bases para un futuro',
+  'es crucial tener en cuenta que'
 ];
 
 export const AI_MARKERS_EN = [
-  // English Conclusions & Closings
-  'in conclusion, it can be stated',
-  'in conclusion, it is evident',
-  'in conclusion,',
-  'in conclusion',
-  'to sum up,',
-  'to sum up',
-  'in summary,',
-  'in summary',
-  'to summarize,',
-  'in the final analysis',
-  'all in all,',
-  'ultimately,',
-  'ultimately',
-  
-  // English Discourse Openings & Transitions
-  'first and foremost',
-  'firstly,',
-  'secondly,',
-  'on the one hand',
-  'on the other hand',
-  'furthermore,',
-  'furthermore',
-  'moreover,',
-  'moreover',
-  'consequently,',
-  'consequently',
-  'in this regard',
-  'in this context',
-  'from this perspective',
-  'in light of this',
-  'as such,',
-  'in today\'s world',
-  'in today\'s rapidly evolving',
-  'in an increasingly interconnected',
-  'in an increasingly',
-  'throughout history',
-  'in the digital age',
-  
-  // English Rhetorical Clichés & Emphasis
-  'delve into',
-  'delving into',
-  'testament to',
-  'serves as a testament',
-  'stands as a testament',
-  'crucial role',
+  // English distinctive LLM rhetorical clichés and formulas
   'plays a crucial role',
   'plays a pivotal role',
   'plays a fundamental role',
-  'plays a key role',
-  'it is important to note',
-  'it is worth noting',
-  'it is crucial to recognize',
-  'it is imperative to',
-  'it is evident that',
-  'it becomes apparent that',
-  'ever-evolving',
-  'multifaceted nature',
-  'multifaceted impact',
-  'multifaceted',
-  'paramount importance',
-  'tapestry of',
-  'rich tapestry',
-  'foster a sense',
-  'fostering a culture',
-  'seamlessly integrate',
-  'underscores the need',
+  'serves as a testament to',
+  'stands as a testament',
+  'delve into the intricacies',
+  'delve into the complexities',
+  'delving into the',
+  'multifaceted tapestry',
+  'rich tapestry of',
+  'fostering a culture of',
   'monumental milestone',
-  'cornerstone of',
-  'a wide array of',
-  'a myriad of',
-  'holistic approach',
-  'holistic vision',
-  'challenges and opportunities',
-  'pave the way for',
-  'catalyst for change',
-  'catalyst for'
+  'ever-evolving landscape',
+  'rapidly evolving landscape',
+  'in an increasingly interconnected world',
+  'seamlessly integrate',
+  'seamless integration of',
+  'underscores the paramount importance',
+  'holistic approach to',
+  'holistic vision of',
+  'pave the way for future',
+  'paving the way for',
+  'catalyst for transformative change',
+  'catalyst for positive change',
+  'it is crucial to recognize that',
+  'it is important to emphasize that'
 ];
 
 export const AI_MARKERS_FR = [
-  // French Conclusions & Closings
-  'en conclusion, il apparaît clairement',
-  'en conclusion, on peut affirmer',
-  'en conclusion,',
-  'en conclusion',
-  'en résumé,',
-  'en résumé',
-  'en somme,',
-  'en somme',
-  'en définitive,',
-  'en définitive',
-  'pour conclure,',
-  'pour conclure',
-  'pour résumer,',
-  'au bout du compte',
-  'en dernière analyse',
-  'tout compte fait',
-  'en guise de conclusion',
-  
-  // French Discourse Openings & Transitions
-  'en premier lieu,',
-  'en premier lieu',
-  'en premier point',
-  'en deuxième lieu',
-  'd\'une part,',
-  'd\'une part',
-  'd\'autre part,',
-  'd\'autre part',
-  'par conséquent,',
-  'par conséquent',
-  'dès lors,',
-  'dès lors',
-  'en outre,',
-  'en outre',
-  'de surcroît,',
-  'de surcroît',
-  'de plus,',
-  'néanmoins,',
-  'toutefois,',
-  'dans cette optique,',
-  'dans cette optique',
-  'dans ce contexte,',
-  'dans ce contexte',
-  'sous cet angle,',
-  'sous cet angle',
-  'de la même manière,',
-  'de la même manière',
-  'de la même façon',
-  'ainsi,',
-  'à cet égard',
-  'à l\'ère numérique',
-  'à l\'ère du numérique',
-  'dans un monde en constante évolution',
-  'dans un monde de plus en plus',
-  'au fil de l\'histoire',
-  'au fil des ans',
-  
-  // French Rhetorical Clichés & Emphasis
+  // French distinctive LLM rhetorical clichés and formulas
   'joue un rôle fondamental',
   'joue un rôle crucial',
-  'joue un rôle essentiel',
-  'joue un rôle pivot',
-  'joue un rôle prépondérant',
-  'occupe une place centrale',
-  'il est important de souligner que',
-  'il est essentiel de noter',
-  'il est essentiel de reconnaître que',
-  'il convient de souligner que',
-  'il convient de noter que',
-  'il convient de rappeler que',
+  'joue un rôle charnière',
+  'un jalon transcendantal',
+  'tissu complexe et',
+  'riche tapisserie de',
+  'dans un monde de plus en plus interconnecté',
+  'paysage en constante évolution',
   'force est de constater que',
-  'il va sans dire que',
-  'il est impératif de',
-  'il est primordial de',
-  'il est crucial de prendre en compte',
-  'constitue un témoignage de',
-  'témoigne de manière tangible',
-  'un jalon historique',
-  'un pilier fondamental',
-  'un impact significatif',
-  'un impact multiforme',
-  'un impact profond',
-  'une approche holistique',
-  'une vision holistique',
-  'de manière intégrale',
-  'de façon holistique',
-  'un large éventail de',
-  'un large éventail',
-  'en constante évolution',
-  'défis et opportunités',
-  'poser les bases de',
-  'ouvrir la voie à',
-  'un catalyseur de',
-  'un catalyseur pour',
-  'en accord avec',
-  'en vue de',
-  'vers un avenir durable'
+  'il est impératif de souligner que',
+  'un catalyseur de transformation',
+  'ouvrir la voie à de nouvelles perspectives',
+  'aborder de manière holistique',
+  'souligne l\'importance primordiale de',
+  'un témoignage éloquent de'
 ];
 
 // Unified catalog
@@ -616,74 +413,60 @@ export function analyzeSentenceForAI(
   // Token count
   const wordCount = tokens.length;
   if (wordCount < 4) {
-    return { aiProbability: 5, perplexityScore: 85, detectedMarkers: [] };
+    return { aiProbability: 2, perplexityScore: 90, detectedMarkers: [] };
   }
 
-  // 2. Detect synthetic tail clauses (Spanish, English, French)
-  const syntheticTailRegex = /,\s*(?:lo que|lo cual|permitiendo|garantizando|facilitando|fomentando|contribuyendo|asegurando|promoviendo|resultando en|dando lugar a|which allows|which enables|allowing for|thereby ensuring|facilitating|fostering|contributing to|resulting in|paving the way for|underscoring the importance of|ce qui permet|ce qui favorise|permettant ainsi de|garantissant ainsi|facilitant|favorisant|contribuant à|assurant|promouvant|aboutissant à|ouvrant la voie à)\b/i;
+  // 2. Detect synthetic tail clauses (Spanish, English, French - specific complex synthetic chains only)
+  const syntheticTailRegex = /,\s*(?:lo que permite vislumbrar|garantizando así una articulación|fomentando con ello un|contribuyendo de manera decisiva a|thereby paving the way for|which seamlessly enables|permettant ainsi d'ouvrir la voie)\b/i;
   const hasSyntheticTail = syntheticTailRegex.test(normalizedSentence);
   if (hasSyntheticTail && !detectedMarkers.some((m) => m.includes('cláusula') || m.includes('clause'))) {
-    detectedMarkers.push('cláusula subordinada conectiva (subordinate tail clause)');
+    detectedMarkers.push('cláusula subordinada artificial (synthetic tail clause)');
   }
 
-  // 3. Detect impersonal passive formulas (Spanish, English, French)
-  const impersonalRegex = /\b(?:se puede|se debe|se observa|se concluye|se evidencia|se destaca|se resalta|se busca|se pretende|se requiere|se presenta como|se traduce en|it can be|it is evident|it should be|it is worth|it appears that|stands as|translates into|is widely regarded|it is widely acknowledged|il est possible|on peut affirmer|il convient de|il s'avère que|il apparaît clairement|on observe que|il est à noter|il est impératif|se présente comme|se traduit par|force est de constater)\b/gi;
+  // 3. Impersonal passive formulas count (requires high clustering to be an indicator)
+  const impersonalRegex = /\b(?:se erige como|se posiciona como|se traduce en|stands as|translates into|is widely regarded|force est de constater|se présente comme)\b/gi;
   const impersonalMatches = normalizedSentence.match(impersonalRegex);
   const impersonalCount = impersonalMatches ? impersonalMatches.length : 0;
 
-  // 4. Keyword matches from characteristic LLM vocabulary
+  // 4. Keyword matches from rare characteristic LLM vocabulary
   const foundKeywords = tokens.filter((t) => AI_KEYWORDS.includes(t));
 
-  // 5. Syntactic balance & comma cadence
-  const commas = (normalizedSentence.match(/,/g) || []).length;
-  const isBalancedLength = wordCount >= 14 && wordCount <= 36;
-  const hasBalancedClauses = isBalancedLength && commas >= 1 && commas <= 3;
+  // 5. Base probability calculation (starts from a clean, non-aggressive neutral baseline)
+  let probability = 4;
 
-  // 6. Base probability calculation
-  let probability = 18; // baseline neutral
-
-  // Marker points (strong direct evidence)
+  // Marker points (strong direct evidence from verified LLM cliché expressions)
   if (detectedMarkers.length > 0) {
-    probability += detectedMarkers.length * 30;
+    probability += detectedMarkers.length * 32;
   }
 
   // Synthetic tail bonus
   if (hasSyntheticTail) {
-    probability += 25;
+    probability += 20;
   }
 
-  // Characteristic keywords
-  if (foundKeywords.length > 0) {
-    probability += Math.min(38, foundKeywords.length * 14);
+  // Characteristic keywords (only if 2 or more distinct keywords cluster in the same sentence)
+  if (foundKeywords.length >= 2) {
+    probability += Math.min(16, (foundKeywords.length - 1) * 6);
   }
 
-  // Impersonal formulas
-  if (impersonalCount > 0) {
-    probability += Math.min(20, impersonalCount * 10);
+  // Impersonal formulas clustering
+  if (impersonalCount >= 2) {
+    probability += 8;
   }
 
-  // Cadence regularity
-  if (hasBalancedClauses) {
-    probability += 12;
-  } else if (isBalancedLength) {
+  // 6. Contextual boost only when document presents heavy marker density
+  if (docContext && docContext.lowBurstiness && docContext.highMarkerDensity) {
     probability += 6;
   }
 
-  // 7. Contextual boost from document-level synthetic profile
-  if (docContext) {
-    if (docContext.lowBurstiness) probability += 10;
-    if (docContext.highConnectorDensity) probability += 12;
-    if (docContext.highMarkerDensity) probability += 12;
-  }
-
-  // Human conversational damping (first-person singular, questions, interjections in ES, EN, FR)
+  // 7. Human conversational damping (first-person singular, questions, personal opinions in ES, EN, FR)
   const humanMarkers = /\b(?:yo|mi opinión|me parece|creo que|opino que|siento que|en mi experiencia|personalmente|quizás|acaso|¡|¿|\?|!|i think|i believe|in my opinion|in my view|i feel|maybe|perhaps|je pense|à mon avis|selon moi|à mon sens|je crois que|peut-être|sans doute|d'après moi)\b/i;
   if (humanMarkers.test(normalizedSentence)) {
-    probability = Math.max(5, probability - 25);
+    probability = Math.max(2, probability - 30);
   }
 
-  // Cap probability between 5% and 99%
-  const aiProbability = Math.min(99, Math.max(5, Math.round(probability)));
+  // Cap probability between 2% and 99%
+  const aiProbability = Math.min(99, Math.max(2, Math.round(probability)));
   
   // Perplexity score: inversely proportional to synthetic predictability
   const perplexityScore = Math.max(10, Math.min(95, Math.round(100 - aiProbability * 0.85)));
@@ -896,8 +679,8 @@ export function runOriginalityAnalysis(
     totalPerplexity += perplexityScore;
     totalProbabilisticWords += (aiProbability / 100) * sWords;
 
-    // A sentence is flagged if probability >= 40% or has explicit detected markers
-    const isFlaggedAI = aiProbability >= 40 || detectedMarkers.length > 0;
+    // A sentence is flagged as AI only with high confidence
+    const isFlaggedAI = aiProbability >= 55 || (detectedMarkers.length >= 1 && aiProbability >= 40);
     if (isFlaggedAI) {
       flaggedAIWordsCount += sWords;
     }
@@ -918,30 +701,15 @@ export function runOriginalityAnalysis(
   // Calculate Burstiness Score (0 to 100, where higher = more human variance, lower = more AI-like uniformity)
   const burstinessScore = Math.min(100, Math.round((stdDev / Math.max(meanWordCount, 1)) * 100));
 
-  // Compute Overall AI Writing Index (%)
+  // Compute Overall AI Writing Index (%) - based directly on the proportion of confirmed synthetic text
   let aiWritingIndex = 0;
   if (totalWords > 0 && totalSentences > 0) {
     const flaggedRatio = flaggedAIWordsCount / totalWords;
-    const probabilisticRatio = totalProbabilisticWords / totalWords;
-
-    let score = 0;
-    if (flaggedRatio > 0.35) {
-      // High presence of flagged AI sentences
-      score = Math.round((flaggedRatio * 0.7 + probabilisticRatio * 0.3) * 100);
-    } else if (flaggedRatio > 0.1 || probabilisticRatio > 0.30) {
-      // Moderate or diffuse presence
-      score = Math.round((flaggedRatio * 0.5 + probabilisticRatio * 0.5) * 100);
+    if (flaggedAIWordsCount === 0) {
+      aiWritingIndex = 0;
     } else {
-      // Predominantly human
-      score = Math.round(probabilisticRatio * 45);
+      aiWritingIndex = Math.min(100, Math.max(0, Math.round(flaggedRatio * 100)));
     }
-
-    // Contextual boost if uniform sentence cadence and synthetic connectors
-    if (docContext.lowBurstiness && (docContext.highConnectorDensity || docContext.highMarkerDensity)) {
-      score = Math.max(score, Math.round(flaggedRatio * 100));
-    }
-
-    aiWritingIndex = Math.min(100, Math.max(0, score));
   }
 
   const averagePerplexity = totalSentences > 0 ? Math.round(totalPerplexity / totalSentences) : 50;

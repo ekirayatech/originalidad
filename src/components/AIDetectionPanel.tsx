@@ -1,22 +1,46 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AnalysisSummary } from '../types';
 import {
   Sparkles,
-  Cpu,
-  HelpCircle,
   AlertCircle,
   Scale,
   BrainCircuit,
-  Activity
+  Activity,
+  Search,
+  ExternalLink,
+  ChevronRight,
+  Filter,
+  CheckCircle2
 } from 'lucide-react';
 
 interface AIDetectionPanelProps {
   analysis: AnalysisSummary;
+  onNavigateToSentence?: (sentenceId: string) => void;
 }
 
-export const AIDetectionPanel: React.FC<AIDetectionPanelProps> = ({ analysis }) => {
+export const AIDetectionPanel: React.FC<AIDetectionPanelProps> = ({ analysis, onNavigateToSentence }) => {
+  const [filterMode, setFilterMode] = useState<'all_flagged' | 'high' | 'all'>('all_flagged');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const flaggedSentences = analysis.aiSentences.filter((s) => s.isFlaggedAI);
+
+  const displayedSentences = analysis.aiSentences.filter((s) => {
+    // Mode filter
+    if (filterMode === 'all_flagged' && !s.isFlaggedAI) return false;
+    if (filterMode === 'high' && s.aiProbability < 70) return false;
+
+    // Text search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchesSentence = s.sentence.toLowerCase().includes(q);
+      const matchesMarker = s.detectedMarkers.some((m) => m.toLowerCase().includes(q));
+      return matchesSentence || matchesMarker;
+    }
+    return true;
+  });
+
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs max-w-4xl mx-auto my-6">
+    <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-xs max-w-4xl mx-auto my-4 sm:my-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div className="flex items-center gap-3">
@@ -44,7 +68,7 @@ export const AIDetectionPanel: React.FC<AIDetectionPanelProps> = ({ analysis }) 
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Metric 1: Burstiness */}
         <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
           <div className="flex items-center justify-between">
@@ -105,14 +129,15 @@ export const AIDetectionPanel: React.FC<AIDetectionPanelProps> = ({ analysis }) 
       </div>
 
       {/* Synthetic Formulaic Connectors List */}
-      <div className="mt-6">
+      <div>
         <h4 className="font-semibold text-xs text-slate-700 uppercase tracking-wider mb-3">
           Patrones y Conectores Cliché de IA Detectados en el Escrito:
         </h4>
 
         {analysis.detectedAIMarkersList.length === 0 ? (
-          <div className="p-3 bg-emerald-50 text-emerald-800 rounded-lg text-xs border border-emerald-200">
-            No se detectaron conectores artificiales recurrentes. La prosa mantiene giros idiomáticos variados y naturales.
+          <div className="p-3 bg-emerald-50 text-emerald-800 rounded-lg text-xs border border-emerald-200 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>No se detectaron conectores artificiales recurrentes. La prosa mantiene giros idiomáticos variados y naturales.</span>
           </div>
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -131,8 +156,147 @@ export const AIDetectionPanel: React.FC<AIDetectionPanelProps> = ({ analysis }) 
         )}
       </div>
 
+      {/* DETAILED SENTENCE INVENTORY / LOCATIONS SECTION */}
+      <div className="pt-4 border-t border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h4 className="font-bold text-base text-slate-900 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-600" />
+              Ubicaciones y Oraciones con Coincidencia de Uso de LLM
+            </h4>
+            <p className="text-xs text-slate-500">
+              Desglose detallado oración por oración con probabilidad sintética estimada y marcadores específicos
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <button
+              onClick={() => setFilterMode('all_flagged')}
+              className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                filterMode === 'all_flagged'
+                  ? 'bg-purple-700 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Señaladas ({flaggedSentences.length})
+            </button>
+            <button
+              onClick={() => setFilterMode('high')}
+              className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                filterMode === 'high'
+                  ? 'bg-purple-700 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Alta Probabilidad &gt;70%
+            </button>
+            <button
+              onClick={() => setFilterMode('all')}
+              className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                filterMode === 'all'
+                  ? 'bg-purple-700 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Todas ({analysis.totalSentences})
+            </button>
+          </div>
+        </div>
+
+        {/* Search bar inside sentences list */}
+        <div className="relative mb-3">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Buscar por fragmento de texto o conector de IA..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all"
+          />
+        </div>
+
+        {/* List of Sentences */}
+        {displayedSentences.length === 0 ? (
+          <div className="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+            No se encontraron oraciones que coincidan con los filtros seleccionados.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {displayedSentences.map((s, idx) => {
+              const originalIndex = analysis.aiSentences.findIndex((item) => item.id === s.id);
+              const isHigh = s.aiProbability >= 70;
+              const isMedium = s.aiProbability >= 40 && s.aiProbability < 70;
+
+              return (
+                <div
+                  key={s.id}
+                  className={`p-3.5 rounded-xl border transition-all ${
+                    s.isFlaggedAI
+                      ? 'bg-purple-50/60 border-purple-200 hover:border-purple-300'
+                      : 'bg-slate-50/60 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-slate-600 px-2 py-0.5 bg-white border border-slate-200 rounded-md">
+                        Oración #{originalIndex + 1}
+                      </span>
+                      <span
+                        className={`text-xs font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                          isHigh
+                            ? 'bg-purple-200 text-purple-900 border border-purple-300'
+                            : isMedium
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                            : 'bg-emerald-100 text-emerald-800'
+                        }`}
+                      >
+                        <Sparkles className="w-3 h-3 text-purple-700" />
+                        {s.aiProbability}% Probabilidad IA
+                      </span>
+                      <span className="text-[11px] text-slate-500 font-mono">
+                        Perplejidad: {s.perplexityScore}/100
+                      </span>
+                    </div>
+
+                    {onNavigateToSentence && (
+                      <button
+                        onClick={() => onNavigateToSentence(s.id)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-purple-700 hover:text-purple-900 hover:underline cursor-pointer"
+                      >
+                        <span>Ver en Documento</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Sentence Excerpt */}
+                  <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-sans bg-white p-2.5 rounded-lg border border-slate-200/80">
+                    "{s.sentence}"
+                  </p>
+
+                  {/* Detected Markers in this sentence */}
+                  {s.detectedMarkers.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      <span className="text-[11px] font-semibold text-slate-500">Conectores identificados:</span>
+                      {s.detectedMarkers.map((marker, mIdx) => (
+                        <span
+                          key={mIdx}
+                          className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 text-[10px] font-mono border border-purple-200 font-medium"
+                        >
+                          "{marker}"
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Ethical and Legal Warning (MEN Colombia & UNESCO) */}
-      <div className="mt-6 p-4 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 space-y-2">
+      <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 space-y-2">
         <div className="flex items-center gap-2 font-bold text-amber-950">
           <Scale className="w-4 h-4 text-amber-600" />
           <span>Advertencia Ética y Pedagógica (Lineamientos MEN Colombia y UNESCO 2023):</span>

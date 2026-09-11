@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   AnalysisSummary,
   MatchedSegment,
@@ -20,6 +20,7 @@ interface ReportViewerProps {
   analysis: AnalysisSummary;
   documentText: string;
   onSelectSource?: (sourceId: number) => void;
+  targetSentenceId?: string | null;
 }
 
 type LayerMode = 'all' | 'similarity' | 'ai' | 'plain';
@@ -27,120 +28,175 @@ type LayerMode = 'all' | 'similarity' | 'ai' | 'plain';
 export const ReportViewer: React.FC<ReportViewerProps> = ({
   analysis,
   documentText,
-  onSelectSource
+  onSelectSource,
+  targetSentenceId
 }) => {
   const [activeLayer, setActiveLayer] = useState<LayerMode>('all');
   const [selectedSegment, setSelectedSegment] = useState<MatchedSegment | null>(null);
   const [selectedAISentence, setSelectedAISentence] = useState<AISentenceAnalysis | null>(null);
 
-  // Split document into paragraphs for pristine reading
-  const paragraphs = documentText.split(/\n\n+/);
+  // Auto-select target sentence if passed from AI diagnostics panel
+  useEffect(() => {
+    if (targetSentenceId) {
+      const found = analysis.aiSentences.find((s) => s.id === targetSentenceId);
+      if (found) {
+        setSelectedAISentence(found);
+        setSelectedSegment(null);
+        setTimeout(() => {
+          const el = document.getElementById(`sentence-${found.id}`);
+          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 150);
+      }
+    }
+  }, [targetSentenceId, analysis.aiSentences]);
 
-  // Find matches and AI flags for a given paragraph text offset
-  const getRenderedParagraph = (para: string, paraIndex: number) => {
-    // Find absolute start index of this paragraph in the document
-    // We can locate it by indexOf or tracking offset
-    const paraStart = documentText.indexOf(para);
-    const paraEnd = paraStart + para.length;
+  // Group sentences into paragraphs robustly using exact offsets from aiSentences
+  const paragraphsWithSentences = useMemo(() => {
+    if (!analysis.aiSentences || analysis.aiSentences.length === 0) {
+      return [];
+    }
 
-    // Filter sentences in this paragraph
-    const pAiSentences = analysis.aiSentences.filter(
-      (s) => s.startIndex >= paraStart && s.endIndex <= paraEnd
-    );
+    const groups: {
+      paraIndex: number;
+      sentences: AISentenceAnalysis[];
+    }[] = [];
 
-    return (
-      <p key={paraIndex} className="text-slate-800 leading-relaxed text-sm sm:text-[15px] font-sans mb-4 relative">
-        <span className="hidden sm:inline-block select-none w-8 -ml-9 text-slate-300 font-mono text-xs text-right pr-3">
-          {paraIndex + 1}
-        </span>
-        {pAiSentences.length === 0 ? (
-          <span>{para}</span>
-        ) : (
-          pAiSentences.map((sAnalysis, sIdx) => {
-            const isAI = sAnalysis.isFlaggedAI && (activeLayer === 'all' || activeLayer === 'ai');
-            const matchSeg = analysis.matchedSegments.find(
-              (m) =>
-                (m.startIndex >= sAnalysis.startIndex && m.startIndex < sAnalysis.endIndex) ||
-                (sAnalysis.startIndex >= m.startIndex && sAnalysis.startIndex < m.endIndex)
-            );
-            const isMatch = matchSeg && (activeLayer === 'all' || activeLayer === 'similarity');
+    let currentGroup: AISentenceAnalysis[] = [];
 
-            // Find source
-            const source = isMatch ? analysis.sources.find((src) => src.id === matchSeg.sourceId) : null;
-            const sourceColor = source ? source.color : '#DC2626';
+    for (let i = 0; i < analysis.aiSentences.length; i++) {
+      const s = analysis.aiSentences[i];
+      currentGroup.push(s);
 
-            // Click handler
-            const handleClick = () => {
-              if (isMatch && matchSeg) {
-                setSelectedSegment(matchSeg);
-                setSelectedAISentence(null);
-                if (onSelectSource) onSelectSource(matchSeg.sourceId);
-              } else if (isAI) {
-                setSelectedAISentence(sAnalysis);
-                setSelectedSegment(null);
-              }
-            };
+      // Check gap between this sentence and the next
+      if (i < analysis.aiSentences.length - 1) {
+        const nextS = analysis.aiSentences[i + 1];
+        const gapText = documentText.substring(s.endIndex, nextS.startIndex);
+        if (/\n\s*\n/.test(gapText) || (gapText.match(/\n/g) || []).length >= 2) {
+          groups.push({
+            paraIndex: groups.length,
+            sentences: currentGroup,
+          });
+          currentGroup = [];
+        }
+      }
+    }
 
-            let classes = 'transition-colors cursor-pointer rounded-xs px-0.5 relative inline ';
+    if (currentGroup.length > 0) {
+      groups.push({
+        paraIndex: groups.length,
+        sentences: currentGroup,
+      });
+    }
 
-            if (isMatch && isAI) {
-              // Both match and AI
-              classes += 'bg-amber-100/90 hover:bg-amber-200 border-b-2 border-dashed border-purple-600 text-slate-900';
-            } else if (isMatch) {
-              // Plagiarism / Similarity Match
-              classes += 'hover:opacity-85 text-slate-900 ';
-            } else if (isAI) {
-              // AI Only
-              classes += 'bg-purple-100 hover:bg-purple-200/90 text-purple-950 border-b-2 border-dotted border-purple-500';
-            } else {
-              classes += 'hover:bg-slate-100';
-            }
+    return groups;
+  }, [analysis.aiSentences, documentText]);
 
-            return (
-              <span
-                key={sIdx}
-                onClick={handleClick}
-                className={classes}
-                style={
-                  isMatch
-                    ? {
-                        backgroundColor: `${sourceColor}22`, // 14% opacity tint
-                        borderBottom: `2px solid ${sourceColor}`
-                      }
-                    : undefined
-                }
-              >
-                {/* Source pill badge: [1], [2], etc. */}
-                {isMatch && source && (
-                  <span
-                    className="inline-flex items-center justify-center text-[10px] font-bold text-white px-1 py-0.2 mx-0.5 rounded-sm select-none"
-                    style={{ backgroundColor: sourceColor }}
-                    title={`Fuente #${source.id}: ${source.sourceTitle}`}
-                  >
-                    {source.id}
-                  </span>
-                )}
-
-                {/* AI sparkle badge */}
-                {isAI && !isMatch && (
-                  <span className="inline-flex items-center text-[10px] font-semibold text-purple-700 bg-purple-200/80 px-1 py-0.2 mx-0.5 rounded-sm select-none">
-                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />
-                    IA
-                  </span>
-                )}
-
-                <span>{sAnalysis.sentence}</span>{' '}
-              </span>
-            );
-          })
-        )}
-      </p>
-    );
-  };
+  const flaggedAISentences = useMemo(() => {
+    return analysis.aiSentences.filter((s) => s.isFlaggedAI);
+  }, [analysis.aiSentences]);
 
   const activeSource = selectedSegment
     ? analysis.sources.find((s) => s.id === selectedSegment.sourceId)
     : null;
+
+  const renderParagraphGroup = (sentences: AISentenceAnalysis[], paraIndex: number) => {
+    return (
+      <p key={paraIndex} className="text-slate-800 leading-relaxed text-sm sm:text-[15px] font-sans mb-5 relative">
+        <span className="hidden sm:inline-block select-none w-8 -ml-9 text-slate-300 font-mono text-xs text-right pr-3">
+          {paraIndex + 1}
+        </span>
+        {sentences.map((sAnalysis, sIdx) => {
+          const isAI = sAnalysis.isFlaggedAI && (activeLayer === 'all' || activeLayer === 'ai');
+          const matchSeg = analysis.matchedSegments.find(
+            (m) =>
+              (m.startIndex >= sAnalysis.startIndex && m.startIndex < sAnalysis.endIndex) ||
+              (sAnalysis.startIndex >= m.startIndex && sAnalysis.startIndex < m.endIndex)
+          );
+          const isMatch = matchSeg && (activeLayer === 'all' || activeLayer === 'similarity');
+          const isSelected = selectedAISentence?.id === sAnalysis.id || (selectedSegment && matchSeg?.id === selectedSegment.id);
+
+          // Find source
+          const source = isMatch ? analysis.sources.find((src) => src.id === matchSeg.sourceId) : null;
+          const sourceColor = source ? source.color : '#DC2626';
+
+          // Click handler
+          const handleClick = () => {
+            if (isMatch && matchSeg) {
+              setSelectedSegment(matchSeg);
+              setSelectedAISentence(null);
+              if (onSelectSource) onSelectSource(matchSeg.sourceId);
+            } else if (isAI) {
+              setSelectedAISentence(sAnalysis);
+              setSelectedSegment(null);
+            }
+          };
+
+          let classes = 'transition-all cursor-pointer rounded-xs px-1 py-0.5 relative inline mx-0.5 ';
+
+          if (activeLayer === 'ai' && !isAI) {
+            // Dim non-AI text in pure AI layer
+            classes += 'opacity-40 hover:opacity-90 text-slate-500 ';
+          } else if (isMatch && isAI) {
+            // Both match and AI
+            classes += 'bg-amber-100/95 hover:bg-amber-200 border-b-2 border-dashed border-purple-600 text-slate-950 font-medium ';
+          } else if (isMatch) {
+            // Plagiarism / Similarity Match
+            classes += 'hover:opacity-85 text-slate-900 ';
+          } else if (isAI) {
+            // AI Only - High visibility purple highlight
+            classes += 'bg-purple-100/95 hover:bg-purple-200/95 text-purple-950 border-b-2 border-purple-600 font-medium ';
+          } else {
+            classes += 'hover:bg-slate-100 text-slate-800 ';
+          }
+
+          if (isSelected) {
+            classes += ' ring-2 ring-purple-600 ring-offset-1 bg-purple-200/90 ';
+          }
+
+          return (
+            <span
+              key={sAnalysis.id || sIdx}
+              id={`sentence-${sAnalysis.id}`}
+              onClick={handleClick}
+              className={classes}
+              style={
+                isMatch
+                  ? {
+                      backgroundColor: `${sourceColor}22`,
+                      borderBottom: `2px solid ${sourceColor}`
+                    }
+                  : undefined
+              }
+            >
+              {/* Source pill badge: [1], [2], etc. */}
+              {isMatch && source && (
+                <span
+                  className="inline-flex items-center justify-center text-[10px] font-bold text-white px-1 py-0.2 mx-0.5 rounded-sm select-none shadow-2xs"
+                  style={{ backgroundColor: sourceColor }}
+                  title={`Fuente #${source.id}: ${source.sourceTitle}`}
+                >
+                  #{source.id}
+                </span>
+              )}
+
+              {/* AI sparkle badge */}
+              {isAI && (
+                <span
+                  className="inline-flex items-center gap-0.5 text-[10px] font-bold text-purple-900 bg-purple-200/90 border border-purple-300 px-1.5 py-0.2 mx-0.5 rounded-sm select-none shadow-2xs"
+                  title={`Patrón sintético de IA detectado (${sAnalysis.aiProbability}% probabilidad)`}
+                >
+                  <Sparkles className="w-2.5 h-2.5 text-purple-700" />
+                  IA {sAnalysis.aiProbability}%
+                </span>
+              )}
+
+              <span>{sAnalysis.sentence}</span>{' '}
+            </span>
+          );
+        })}
+      </p>
+    );
+  };
 
   return (
     <div className="flex-1 bg-slate-100/80 p-2.5 sm:p-4 md:p-6 overflow-y-auto">
@@ -209,8 +265,60 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
         </div>
       </div>
 
+      {/* AI Sentences Quick Jump Bar */}
+      {flaggedAISentences.length > 0 && (
+        <div className="max-w-4xl mx-auto mb-3 sm:mb-4 bg-purple-50/90 border border-purple-200 rounded-xl p-3 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs text-purple-900 font-bold">
+              <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+              <span>Ubicaciones con indicios de IA detectadas ({flaggedAISentences.length} oraciones):</span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs">
+              {flaggedAISentences.map((s, idx) => {
+                const isCurrent = selectedAISentence?.id === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      setSelectedAISentence(s);
+                      setSelectedSegment(null);
+                      const el = document.getElementById(`sentence-${s.id}`);
+                      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    className={`px-2.5 py-1 rounded-md font-mono text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 ${
+                      isCurrent
+                        ? 'bg-purple-700 text-white shadow-xs'
+                        : 'bg-white text-purple-800 border border-purple-200 hover:bg-purple-100 hover:border-purple-300'
+                    }`}
+                    title={`Ir a la oración: "${s.sentence.substring(0, 70)}..."`}
+                  >
+                    <span>#{idx + 1}</span>
+                    <span className="text-[10px] opacity-80">({s.aiProbability}%)</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Document Paper Sheet */}
       <div className="max-w-4xl mx-auto bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-8 md:p-12 relative">
+        {/* Active Layer Banner Notice */}
+        {activeLayer === 'ai' && (
+          <div className="mb-6 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between text-xs text-purple-900">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+              <span>
+                <strong>Capa de Detección de IA Activa:</strong> Se resaltan en violeta las oraciones con patrones sintéticos algorítmicos. Haz clic en cualquiera para ver sus métricas y conectores.
+              </span>
+            </div>
+            <span className="font-bold font-mono px-2 py-0.5 bg-purple-200 text-purple-900 rounded-md shrink-0">
+              {flaggedAISentences.length} oraciones señaladas
+            </span>
+          </div>
+        )}
+
         {/* Document Header in Sheet */}
         <div className="border-b border-slate-100 pb-4 sm:pb-6 mb-6 sm:mb-8">
           <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs text-slate-400 font-mono mb-2">
@@ -238,7 +346,7 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
 
         {/* Document Body with Highlights */}
         <div className="pl-3 sm:pl-6 border-l border-slate-100">
-          {paragraphs.map((para, idx) => getRenderedParagraph(para, idx))}
+          {paragraphsWithSentences.map((group) => renderParagraphGroup(group.sentences, group.paraIndex))}
         </div>
 
         {/* Selected Match Card Modal / Flyout */}

@@ -62,6 +62,9 @@ export default function App() {
   // Active selected source ID in sidebar
   const [activeSourceId, setActiveSourceId] = useState<number | null>(null);
 
+  // Selected target AI sentence to highlight and focus in report
+  const [targetSentenceId, setTargetSentenceId] = useState<string | null>(null);
+
   // Modals state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
@@ -134,7 +137,7 @@ export default function App() {
         onOpenCorpusModal={() => setIsCorpusModalOpen(true)}
         onOpenLegalModal={() => setIsLegalModalOpen(true)}
         onOpenCommunityModal={() => setIsCommunityModalOpen(true)}
-        onExportPDF={() => analysis && exportAnalysisToPDF(analysis)}
+        onExportPDF={() => analysis && exportAnalysisToPDF(analysis, content)}
         onExportCSV={() => analysis && exportAnalysisToCSV(analysis)}
         isEditorOpen={isEditorOpen}
       />
@@ -232,6 +235,7 @@ export default function App() {
                 analysis={analysis}
                 documentText={content}
                 onSelectSource={(srcId) => setActiveSourceId(srcId)}
+                targetSentenceId={targetSentenceId}
               />
               <SourcesPanel
                 sources={analysis.sources}
@@ -246,7 +250,13 @@ export default function App() {
           ) : (
             /* View Tab 2: AI Writing Diagnostics Panel */
             <div className="flex-1 p-4 sm:p-6 bg-slate-50">
-              <AIDetectionPanel analysis={analysis} />
+              <AIDetectionPanel
+                analysis={analysis}
+                onNavigateToSentence={(sentenceId) => {
+                  setTargetSentenceId(sentenceId);
+                  setActiveTab('report');
+                }}
+              />
             </div>
           )}
         </main>
