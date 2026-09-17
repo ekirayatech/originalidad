@@ -87,6 +87,15 @@ export default function App() {
   // Handler to add custom reference to corpus
   const handleAddCorpusDoc = (newDoc: ReferenceDocument) => {
     setCorpus((prev) => {
+      // Avoid duplicate documents
+      const alreadyExists = prev.some(
+        (d) =>
+          d.id === newDoc.id ||
+          (d.title.trim().toLowerCase() === newDoc.title.trim().toLowerCase() &&
+            d.content.trim() === newDoc.content.trim())
+      );
+      if (alreadyExists) return prev;
+
       const updated = [...prev, newDoc];
       try {
         const customDocs = updated.filter((d) => d.isCustomUploaded);
@@ -119,10 +128,27 @@ export default function App() {
   };
 
   // Handler when a file is uploaded via modal or quick action
-  const handleDocumentAnalyzed = (newTitle: string, newAuthor: string, newContent: string) => {
+  const handleDocumentAnalyzed = (
+    newTitle: string,
+    newAuthor: string,
+    newContent: string,
+    addToCorpus?: boolean
+  ) => {
     setTitle(newTitle);
     setAuthor(newAuthor);
     setContent(newContent);
+    if (addToCorpus) {
+      handleAddCorpusDoc({
+        id: `custom-${Date.now()}`,
+        title: newTitle,
+        author: newAuthor,
+        type: 'student_paper',
+        year: new Date().getFullYear(),
+        institutionOrJournal: 'Colegio Bilingüe Ekirayá - Entregas de Estudiantes',
+        content: newContent,
+        isCustomUploaded: true
+      });
+    }
     setIsEditorOpen(false);
     setActiveTab('report');
   };
@@ -140,6 +166,8 @@ export default function App() {
         onExportPDF={() => analysis && exportAnalysisToPDF(analysis, content)}
         onExportCSV={() => analysis && exportAnalysisToCSV(analysis)}
         isEditorOpen={isEditorOpen}
+        corpusCount={corpus.length}
+        customCorpusCount={corpus.filter((d) => d.isCustomUploaded).length}
       />
 
       {/* Main Content Area */}
@@ -236,6 +264,24 @@ export default function App() {
                 documentText={content}
                 onSelectSource={(srcId) => setActiveSourceId(srcId)}
                 targetSentenceId={targetSentenceId}
+                onAddToCorpus={() => {
+                  handleAddCorpusDoc({
+                    id: `custom-${analysis.documentId}`,
+                    title: analysis.title,
+                    author: analysis.author,
+                    type: 'student_paper',
+                    year: new Date().getFullYear(),
+                    institutionOrJournal: 'Colegio Bilingüe Ekirayá - Entregas de Estudiantes',
+                    content: content,
+                    isCustomUploaded: true
+                  });
+                }}
+                isAlreadyInCorpus={corpus.some(
+                  (d) =>
+                    d.id === `custom-${analysis.documentId}` ||
+                    (d.title.trim().toLowerCase() === analysis.title.trim().toLowerCase() &&
+                      d.content.trim() === content.trim())
+                )}
               />
               <SourcesPanel
                 sources={analysis.sources}

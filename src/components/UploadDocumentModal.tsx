@@ -16,7 +16,7 @@ import { extractTextFromFile, ExtractedDocument } from '../utils/documentParser'
 interface UploadDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onDocumentAnalyzed: (title: string, author: string, content: string) => void;
+  onDocumentAnalyzed: (title: string, author: string, content: string, addToCorpus?: boolean) => void;
 }
 
 export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
@@ -29,6 +29,7 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<ExtractedDocument | null>(null);
+  const [saveToCorpus, setSaveToCorpus] = useState(false);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -90,7 +91,7 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
       if (!extractedData) return;
       const finalTitle = title.trim() || extractedData.title || 'Documento sin título';
       const finalAuthor = author.trim() || 'Estudiante Ekirayá';
-      onDocumentAnalyzed(finalTitle, finalAuthor, extractedData.text);
+      onDocumentAnalyzed(finalTitle, finalAuthor, extractedData.text, saveToCorpus);
     } else {
       const words = pastedText.trim().split(/\s+/).filter(Boolean);
       if (words.length < 10) {
@@ -99,7 +100,7 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
       }
       const finalTitle = title.trim() || 'Documento de Evaluación';
       const finalAuthor = author.trim() || 'Estudiante Ekirayá';
-      onDocumentAnalyzed(finalTitle, finalAuthor, pastedText.trim());
+      onDocumentAnalyzed(finalTitle, finalAuthor, pastedText.trim(), saveToCorpus);
     }
     onClose();
   };
@@ -389,6 +390,29 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Option to save to reference corpus (Always visible so the teacher can toggle it anytime) */}
+          <label className={`flex items-start gap-3 p-3.5 rounded-xl border transition-colors cursor-pointer ${
+            saveToCorpus ? 'bg-sky-50 border-sky-300 shadow-xs' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/80'
+          }`}>
+            <input
+              type="checkbox"
+              checked={saveToCorpus}
+              onChange={(e) => setSaveToCorpus(e.target.checked)}
+              className="mt-0.5 rounded text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer shrink-0"
+            />
+            <div className="text-xs">
+              <span className="font-bold text-slate-900 block flex items-center gap-1.5">
+                <span>Guardar copia en la Biblioteca de Cotejo para futuros análisis</span>
+                <span className="text-[10px] font-semibold uppercase px-1.5 py-0.2 rounded-sm bg-sky-100 text-sky-800 border border-sky-200">
+                  Opción 1
+                </span>
+              </span>
+              <span className="text-slate-600 text-[11px] block mt-0.5 leading-snug">
+                Si activas esta casilla, el texto se añadirá automáticamente a tu repositorio local seguro para que cualquier próximo estudiante o trabajo entregado después sea comparado contra él.
+              </span>
+            </div>
+          </label>
 
           {errorMessage && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-start gap-2">

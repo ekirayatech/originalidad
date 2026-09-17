@@ -21,6 +21,8 @@ interface ReportViewerProps {
   documentText: string;
   onSelectSource?: (sourceId: number) => void;
   targetSentenceId?: string | null;
+  onAddToCorpus?: () => void;
+  isAlreadyInCorpus?: boolean;
 }
 
 type LayerMode = 'all' | 'similarity' | 'ai' | 'plain';
@@ -29,7 +31,9 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
   analysis,
   documentText,
   onSelectSource,
-  targetSentenceId
+  targetSentenceId,
+  onAddToCorpus,
+  isAlreadyInCorpus
 }) => {
   const [activeLayer, setActiveLayer] = useState<LayerMode>('all');
   const [selectedSegment, setSelectedSegment] = useState<MatchedSegment | null>(null);
@@ -342,6 +346,37 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
               </>
             )}
           </div>
+
+          {onAddToCorpus && (
+            <div className="mt-3.5 flex items-center gap-2">
+              <button
+                onClick={onAddToCorpus}
+                disabled={isAlreadyInCorpus}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-xs ${
+                  isAlreadyInCorpus
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 cursor-default'
+                    : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-300 cursor-pointer active:scale-95'
+                }`}
+                title={
+                  isAlreadyInCorpus
+                    ? 'Este trabajo ya se encuentra registrado en el corpus local de cotejo'
+                    : 'Guardar este trabajo en el corpus para cotejarlo con futuros documentos'
+                }
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>
+                  {isAlreadyInCorpus
+                    ? '✓ En Biblioteca de Cotejo (Activo para futuros análisis)'
+                    : '+ Guardar en Biblioteca para Contrastar Futuros Trabajos'}
+                </span>
+              </button>
+              {!isAlreadyInCorpus && (
+                <span className="text-[11px] text-slate-500 hidden sm:inline">
+                  (Permite que los próximos estudiantes sean comparados contra este trabajo)
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Document Body with Highlights */}

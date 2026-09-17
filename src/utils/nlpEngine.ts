@@ -500,12 +500,28 @@ export function runOriginalityAnalysis(
   const quoteSpans = detectQuotes(documentText);
   const bibliographyStart = detectBibliographyStart(documentText);
 
-  // Pre-tokenize corpus documents for speed
-  const preprocessedCorpus = corpus.map((doc) => ({
-    doc,
-    tokens: cleanTokens(doc.content),
-    lowerContent: doc.content.toLowerCase()
-  }));
+  // Pre-tokenize corpus documents for speed (exclude the document itself to avoid self-match)
+  const normalizedCurrentText = documentText.trim().toLowerCase();
+  const preprocessedCorpus = corpus
+    .filter((doc) => {
+      const docLower = doc.content.trim().toLowerCase();
+      // Skip if it's the exact same content as the document currently being evaluated
+      if (docLower === normalizedCurrentText) return false;
+      // Skip if same title and author and nearly identical content length
+      if (
+        doc.title.trim().toLowerCase() === title.trim().toLowerCase() &&
+        Math.abs(doc.content.length - documentText.length) < 20 &&
+        docLower.slice(0, 100) === normalizedCurrentText.slice(0, 100)
+      ) {
+        return false;
+      }
+      return true;
+    })
+    .map((doc) => ({
+      doc,
+      tokens: cleanTokens(doc.content),
+      lowerContent: doc.content.toLowerCase()
+    }));
 
   const matchedSegments: MatchedSegment[] = [];
   const sourceStatsMap = new Map<string, { count: number; words: number; sampleExcerpt: string }>();

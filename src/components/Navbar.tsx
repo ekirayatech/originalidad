@@ -24,6 +24,8 @@ interface NavbarProps {
   onExportPDF: () => void;
   onExportCSV: () => void;
   isEditorOpen: boolean;
+  corpusCount?: number;
+  customCorpusCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -35,7 +37,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCommunityModal,
   onExportPDF,
   onExportCSV,
-  isEditorOpen
+  isEditorOpen,
+  corpusCount = 0,
+  customCorpusCount = 0
 }) => {
   const [logoFailed, setLogoFailed] = useState(false);
 
@@ -110,11 +114,21 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={onOpenCorpusModal}
-            className="hidden lg:flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition-all cursor-pointer"
-            title="Gestionar fuentes académicas y corpus en memoria local"
+            className="flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-sky-950/80 hover:bg-sky-900 active:scale-95 text-sky-200 border border-sky-700 shadow-xs transition-all cursor-pointer"
+            title="Biblioteca de Cotejo y Entregas Anteriores: Gestionar documentos para comparar"
           >
-            <BookOpen className="w-3.5 h-3.5 text-sky-400" />
-            <span>Biblioteca</span>
+            <BookOpen className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+            <span className="hidden sm:inline">Biblioteca Cotejo</span>
+            <span className="sm:hidden">Cotejo</span>
+            {customCorpusCount > 0 ? (
+              <span className="bg-sky-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
+                {customCorpusCount}
+              </span>
+            ) : corpusCount > 0 ? (
+              <span className="bg-slate-700 text-slate-300 text-[10px] px-1.5 py-0.2 rounded-full hidden md:inline">
+                {corpusCount}
+              </span>
+            ) : null}
           </button>
 
           {analysis && !isEditorOpen && (
