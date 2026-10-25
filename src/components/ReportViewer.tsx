@@ -13,7 +13,9 @@ import {
   X,
   FileCheck,
   Cpu,
-  Languages
+  Languages,
+  Cloud,
+  Check
 } from 'lucide-react';
 
 interface ReportViewerProps {
@@ -23,6 +25,9 @@ interface ReportViewerProps {
   targetSentenceId?: string | null;
   onAddToCorpus?: () => void;
   isAlreadyInCorpus?: boolean;
+  onSaveToFirebase?: () => void;
+  isSavedToFirebase?: boolean;
+  isSavingToFirebase?: boolean;
 }
 
 type LayerMode = 'all' | 'similarity' | 'ai' | 'plain';
@@ -33,7 +38,10 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
   onSelectSource,
   targetSentenceId,
   onAddToCorpus,
-  isAlreadyInCorpus
+  isAlreadyInCorpus,
+  onSaveToFirebase,
+  isSavedToFirebase,
+  isSavingToFirebase
 }) => {
   const [activeLayer, setActiveLayer] = useState<LayerMode>('all');
   const [selectedSegment, setSelectedSegment] = useState<MatchedSegment | null>(null);
@@ -347,8 +355,8 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
             )}
           </div>
 
-          {onAddToCorpus && (
-            <div className="mt-3.5 flex items-center gap-2">
+          <div className="mt-3.5 flex flex-wrap items-center gap-2">
+            {onAddToCorpus && (
               <button
                 onClick={onAddToCorpus}
                 disabled={isAlreadyInCorpus}
@@ -366,17 +374,34 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>
                   {isAlreadyInCorpus
-                    ? '✓ En Biblioteca de Cotejo (Activo para futuros análisis)'
-                    : '+ Guardar en Biblioteca para Contrastar Futuros Trabajos'}
+                    ? '✓ En Biblioteca de Cotejo'
+                    : '+ Guardar en Biblioteca para Contrastar'}
                 </span>
               </button>
-              {!isAlreadyInCorpus && (
-                <span className="text-[11px] text-slate-500 hidden sm:inline">
-                  (Permite que los próximos estudiantes sean comparados contra este trabajo)
+            )}
+
+            {onSaveToFirebase && (
+              <button
+                onClick={onSaveToFirebase}
+                disabled={isSavedToFirebase || isSavingToFirebase}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-xs ${
+                  isSavedToFirebase
+                    ? 'bg-indigo-50 text-indigo-800 border border-indigo-300 cursor-default'
+                    : 'bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white cursor-pointer'
+                }`}
+                title="Guardar registro completo de esta evaluación en la base de datos de Firebase"
+              >
+                <Cloud className="w-3.5 h-3.5" />
+                <span>
+                  {isSavingToFirebase
+                    ? 'Guardando en Firebase...'
+                    : isSavedToFirebase
+                    ? '✓ Guardado en Firebase'
+                    : 'Guardar Registro en Firebase'}
                 </span>
-              )}
-            </div>
-          )}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Document Body with Highlights */}

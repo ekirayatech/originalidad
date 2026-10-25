@@ -13,10 +13,19 @@ import {
 } from 'lucide-react';
 import { extractTextFromFile, ExtractedDocument } from '../utils/documentParser';
 
+import { useAuth } from '../context/AuthContext';
+import { Cloud } from 'lucide-react';
+
 interface UploadDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onDocumentAnalyzed: (title: string, author: string, content: string, addToCorpus?: boolean) => void;
+  onDocumentAnalyzed: (
+    title: string,
+    author: string,
+    content: string,
+    addToCorpus?: boolean,
+    saveToFirebase?: boolean
+  ) => void;
 }
 
 export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
@@ -24,12 +33,14 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
   onClose,
   onDocumentAnalyzed
 }) => {
+  const { user } = useAuth();
   const [activeMode, setActiveMode] = useState<'upload' | 'paste'>('upload');
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<ExtractedDocument | null>(null);
   const [saveToCorpus, setSaveToCorpus] = useState(false);
+  const [saveToFirebase, setSaveToFirebase] = useState(true);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -91,7 +102,7 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
       if (!extractedData) return;
       const finalTitle = title.trim() || extractedData.title || 'Documento sin título';
       const finalAuthor = author.trim() || 'Estudiante Ekirayá';
-      onDocumentAnalyzed(finalTitle, finalAuthor, extractedData.text, saveToCorpus);
+      onDocumentAnalyzed(finalTitle, finalAuthor, extractedData.text, saveToCorpus, saveToFirebase && !!user);
     } else {
       const words = pastedText.trim().split(/\s+/).filter(Boolean);
       if (words.length < 10) {
@@ -100,7 +111,7 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
       }
       const finalTitle = title.trim() || 'Documento de Evaluación';
       const finalAuthor = author.trim() || 'Estudiante Ekirayá';
-      onDocumentAnalyzed(finalTitle, finalAuthor, pastedText.trim(), saveToCorpus);
+      onDocumentAnalyzed(finalTitle, finalAuthor, pastedText.trim(), saveToCorpus, saveToFirebase && !!user);
     }
     onClose();
   };
@@ -410,6 +421,43 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
               </span>
               <span className="text-slate-600 text-[11px] block mt-0.5 leading-snug">
                 Si activas esta casilla, el texto se añadirá automáticamente a tu repositorio local seguro para que cualquier próximo estudiante o trabajo entregado después sea comparado contra él.
+              </span>
+            </div>
+          </label>
+
+          {/* Option to save to Firebase */}
+          <label
+            className={`flex items-start gap-3 p-3.5 rounded-xl border transition-colors cursor-pointer ${
+              saveToFirebase && user
+                ? 'bg-indigo-50 border-indigo-300 shadow-xs'
+                : 'bg-slate-50 border-slate-200 hover:bg-slate-100/80'
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={saveToFirebase && !!user}
+              disabled={!user}
+              onChange={(e) => setSaveToFirebase(e.target.checked)}
+              className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer shrink-0 disabled:opacity-50"
+            />
+            <div className="text-xs">
+              <span className="font-bold text-slate-900 block flex items-center gap-1.5">
+                <Cloud className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Guardar registro en la nube (Google Firebase Firestore)</span>
+                {user ? (
+                  <span className="text-[10px] font-semibold uppercase px-1.5 py-0.2 rounded-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+                    Firebase Activo
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.2 rounded-sm">
+                    Inicia sesión para activar
+                  </span>
+                )}
+              </span>
+              <span className="text-slate-600 text-[11px] block mt-0.5 leading-snug">
+                {user
+                  ? 'Almacena la métrica de originalidad, similitudes, extracto y observaciones en tu base de datos protegida de Firebase.'
+                  : 'Inicia sesión con Google en la barra superior para guardar automáticamente tus revisiones de estudiantes en la nube.'}
               </span>
             </div>
           </label>

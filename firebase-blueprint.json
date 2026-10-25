@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Perfil del usuario docente o revisor en el sistema Ekirayá",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "photoURL": { "type": "string", "maxLength": 512 },
+        "role": { "type": "string", "enum": ["teacher", "admin", "reviewer"], "maxLength": 32 },
+        "institution": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "lastLoginAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "email", "displayName"]
+    },
+    "DocumentRecord": {
+      "title": "DocumentRecord",
+      "description": "Registro de documento analizado y resultado de originalidad",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 300 },
+        "author": { "type": "string", "maxLength": 200 },
+        "wordCount": { "type": "number" },
+        "contentSnippet": { "type": "string", "maxLength": 10000 },
+        "overallSimilarity": { "type": "number" },
+        "originalityScore": { "type": "number" },
+        "studentPaperSimilarity": { "type": "number" },
+        "matchesCount": { "type": "number" },
+        "summary": { "type": "string", "maxLength": 2000 },
+        "teacherNotes": { "type": "string", "maxLength": 2000 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userEmail": { "type": "string", "maxLength": 256 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "author", "userId", "overallSimilarity", "originalityScore"]
+    },
+    "ReferenceCorpusDocument": {
+      "title": "ReferenceCorpusDocument",
+      "description": "Documento almacenado en la biblioteca de cotejo compartida para comparaciones",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 300 },
+        "author": { "type": "string", "maxLength": 200 },
+        "type": { "type": "string", "enum": ["student_paper", "academic_journal", "institutional", "web_article"], "maxLength": 64 },
+        "year": { "type": "number" },
+        "institutionOrJournal": { "type": "string", "maxLength": 256 },
+        "content": { "type": "string", "maxLength": 200000 },
+        "wordCount": { "type": "number" },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdByName": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "author", "content", "createdBy"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Perfiles de usuarios y educadores"
+    },
+    "/documents/{documentId}": {
+      "schema": "DocumentRecord",
+      "description": "Historial de trabajos evaluados con métricas de originalidad y similitud"
+    },
+    "/reference_documents/{referenceDocId}": {
+      "schema": "ReferenceCorpusDocument",
+      "description": "Biblioteca centralizada de documentos de cotejo y entregas previas para contrastar"
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { ColorFunnel } from './components/ColorFunnel';
 import { ReportViewer } from './components/ReportViewer';
@@ -9,12 +9,22 @@ import { LegalComplianceModal } from './components/LegalComplianceModal';
 import { CustomCorpusModal } from './components/CustomCorpusModal';
 import { CommunityGuidanceModal } from './components/CommunityGuidanceModal';
 import { UploadDocumentModal } from './components/UploadDocumentModal';
+import { DocumentRecordsModal } from './components/DocumentRecordsModal';
 import { DEFAULT_CORPUS } from './data/defaultCorpus';
 import { SAMPLE_DOCUMENTS } from './data/sampleDocuments';
 import { EKIRAYA_CONFIG } from './data/ekirayaConfig';
 import { AnalysisFilters, ReferenceDocument } from './types';
 import { runOriginalityAnalysis } from './utils/nlpEngine';
 import { exportAnalysisToPDF, exportAnalysisToCSV } from './utils/exportUtils';
+import { useAuth } from './context/AuthContext';
+import {
+  saveAnalyzedDocumentRecord,
+  saveReferenceCorpusDocToFirestore,
+  subscribeReferenceDocuments,
+  deleteReferenceDocFromFirestore,
+  subscribeUserDocuments,
+  type SavedDocumentRecord
+} from './lib/firebase';
 import {
   FileText,
   Sparkles,
@@ -27,7 +37,9 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  // Corpus state (default + custom stored in localStorage)
+  const { user } = useAuth();
+
+  // Corpus state (default + custom stored in localStorage + Firebase cloud sync)
   const [corpus, setCorpus] = useState<ReferenceDocument[]>(() => {
     try {
       const saved = localStorage.getItem('veritas_custom_corpus');
@@ -70,6 +82,54 @@ export default function App() {
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [isCorpusModalOpen, setIsCorpusModalOpen] = useState(false);
   const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
+  const [isRecordsModalOpen, setIsRecordsModalOpen] = useState(false);
+
+  // Firebase records state
+  const [savedRecordsCount, setSavedRecordsCount] = useState<number>(0);
+  const [isSavingToFirebase, setIsSavingToFirebase] = useState(false);
+  const [isSavedToFirebase, setIsSavedToFirebase] = useState(false);
+
+  // Listen to user's saved records in Firestore
+  useEffect(() => {
+    if (!user) {
+      setSavedRecordsCount(0);
+      return;
+    }
+
+    const unsubscribe = subscribeUserDocuments(
+      user.uid,
+      (docs) => {
+        setSavedRecordsCount(docs.length);
+      },
+      (err) => console.error('Error escuchando documentos de usuario:', err)
+    );
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Sync reference corpus with Firebase Firestore when logged in
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = subscribeReferenceDocuments((cloudDocs) => {
+      if (cloudDocs.length === 0) return;
+
+      setCorpus((prev) => {
+        const merged = [...prev];
+        for (const cDoc of cloudDocs) {
+          const index = merged.findIndex((d) => d.id === cDoc.id);
+          if (index >= 0) {
+            merged[index] = cDoc;
+          } else {
+            merged.push(cDoc);
+          }
+        }
+        return merged;
+      });
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   // Run analysis in browser memory (memoized on content, title, author, corpus, filters)
   const analysis = useMemo(() => {
@@ -84,8 +144,8 @@ export default function App() {
     setFilters((prev) => ({ ...prev, ...newFilters }));
   };
 
-  // Handler to add custom reference to corpus
-  const handleAddCorpusDoc = (newDoc: ReferenceDocument) => {
+  // Handler to add custom reference to corpus (both local and Firebase)
+  const handleAddCorpusDoc = async (newDoc: ReferenceDocument) => {
     setCorpus((prev) => {
       // Avoid duplicate documents
       const alreadyExists = prev.some(
@@ -105,10 +165,19 @@ export default function App() {
       }
       return updated;
     });
+
+    // If user is authenticated, also sync to Firestore
+    if (user) {
+      try {
+        await saveReferenceCorpusDocToFirestore(newDoc);
+      } catch (err) {
+        console.error('Error guardando documento de referencia en Firestore:', err);
+      }
+    }
   };
 
   // Handler to delete custom reference
-  const handleDeleteCorpusDoc = (docId: string) => {
+  const handleDeleteCorpusDoc = async (docId: string) => {
     setCorpus((prev) => {
       const updated = prev.filter((d) => d.id !== docId);
       try {
@@ -119,6 +188,35 @@ export default function App() {
       }
       return updated;
     });
+
+    if (user) {
+      try {
+        await deleteReferenceDocFromFirestore(docId);
+      } catch (err) {
+        console.error('Error eliminando documento de referencia en Firestore:', err);
+      }
+    }
+  };
+
+  // Handler to save current analysis directly to Firebase
+  const handleSaveCurrentToFirebase = async () => {
+    if (!analysis) return;
+    if (!user) {
+      alert('Por favor ingresa con Google en la barra superior para guardar este registro en Firebase.');
+      return;
+    }
+
+    setIsSavingToFirebase(true);
+    try {
+      await saveAnalyzedDocumentRecord(analysis, content);
+      setIsSavedToFirebase(true);
+      setTimeout(() => setIsSavedToFirebase(false), 5000);
+    } catch (err) {
+      console.error('Error al guardar registro en Firebase:', err);
+      alert('No se pudo guardar el registro en Firebase.');
+    } finally {
+      setIsSavingToFirebase(false);
+    }
   };
 
   // Handler to trigger verification from editor
@@ -128,17 +226,20 @@ export default function App() {
   };
 
   // Handler when a file is uploaded via modal or quick action
-  const handleDocumentAnalyzed = (
+  const handleDocumentAnalyzed = async (
     newTitle: string,
     newAuthor: string,
     newContent: string,
-    addToCorpus?: boolean
+    addToCorpus?: boolean,
+    saveToFirebase?: boolean
   ) => {
     setTitle(newTitle);
     setAuthor(newAuthor);
     setContent(newContent);
+    setIsSavedToFirebase(false);
+
     if (addToCorpus) {
-      handleAddCorpusDoc({
+      await handleAddCorpusDoc({
         id: `custom-${Date.now()}`,
         title: newTitle,
         author: newAuthor,
@@ -149,6 +250,27 @@ export default function App() {
         isCustomUploaded: true
       });
     }
+
+    // Run immediate analysis for Firebase persist if requested
+    if (saveToFirebase && user) {
+      try {
+        const immediateAnalysis = runOriginalityAnalysis(newContent, newTitle, newAuthor, corpus, filters);
+        await saveAnalyzedDocumentRecord(immediateAnalysis, newContent);
+        setIsSavedToFirebase(true);
+        setTimeout(() => setIsSavedToFirebase(false), 5000);
+      } catch (err) {
+        console.error('Error guardando documento inicial en Firebase:', err);
+      }
+    }
+
+    setIsEditorOpen(false);
+    setActiveTab('report');
+  };
+
+  const handleSelectSnippetFromHistory = (snippet: string, snippetTitle: string, snippetAuthor: string) => {
+    setTitle(snippetTitle);
+    setAuthor(snippetAuthor);
+    setContent(snippet);
     setIsEditorOpen(false);
     setActiveTab('report');
   };
@@ -163,11 +285,13 @@ export default function App() {
         onOpenCorpusModal={() => setIsCorpusModalOpen(true)}
         onOpenLegalModal={() => setIsLegalModalOpen(true)}
         onOpenCommunityModal={() => setIsCommunityModalOpen(true)}
+        onOpenRecordsModal={() => setIsRecordsModalOpen(true)}
         onExportPDF={() => analysis && exportAnalysisToPDF(analysis, content)}
         onExportCSV={() => analysis && exportAnalysisToCSV(analysis)}
         isEditorOpen={isEditorOpen}
         corpusCount={corpus.length}
         customCorpusCount={corpus.filter((d) => d.isCustomUploaded).length}
+        savedRecordsCount={savedRecordsCount}
       />
 
       {/* Main Content Area */}
@@ -234,20 +358,20 @@ export default function App() {
               <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500">
                 <button
                   onClick={() => setIsUploadModalOpen(true)}
-                  className="flex items-center gap-1 px-2.5 py-1 text-red-700 hover:text-red-900 rounded-md hover:bg-red-50 border border-red-200 font-semibold"
+                  className="flex items-center gap-1 px-2.5 py-1 text-red-700 hover:text-red-900 rounded-md hover:bg-red-50 border border-red-200 font-semibold cursor-pointer"
                 >
                   <UploadCloud className="w-3.5 h-3.5" />
                   <span>Subir otro archivo</span>
                 </button>
                 <button
                   onClick={() => setIsCommunityModalOpen(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-emerald-800 hover:text-emerald-950 rounded-md hover:bg-emerald-50 border border-emerald-200"
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-emerald-800 hover:text-emerald-950 rounded-md hover:bg-emerald-50 border border-emerald-200 cursor-pointer"
                 >
                   <span>Normas y Embudo</span>
                 </button>
                 <button
                   onClick={() => setIsEditorOpen(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-100"
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-100 cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Editar Texto</span>
@@ -282,6 +406,9 @@ export default function App() {
                     (d.title.trim().toLowerCase() === analysis.title.trim().toLowerCase() &&
                       d.content.trim() === content.trim())
                 )}
+                onSaveToFirebase={handleSaveCurrentToFirebase}
+                isSavedToFirebase={isSavedToFirebase}
+                isSavingToFirebase={isSavingToFirebase}
               />
               <SourcesPanel
                 sources={analysis.sources}
@@ -321,13 +448,13 @@ export default function App() {
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={() => setIsUploadModalOpen(true)}
-                className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 shadow-xs"
+                className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 shadow-xs cursor-pointer"
               >
                 Subir Archivo
               </button>
               <button
                 onClick={() => setIsEditorOpen(true)}
-                className="px-4 py-2 bg-slate-100 text-slate-800 rounded-xl text-xs font-semibold hover:bg-slate-200"
+                className="px-4 py-2 bg-slate-100 text-slate-800 rounded-xl text-xs font-semibold hover:bg-slate-200 cursor-pointer"
               >
                 Escribir o Pegar
               </button>
@@ -363,6 +490,13 @@ export default function App() {
         corpus={corpus}
         onAddDocument={handleAddCorpusDoc}
         onDeleteDocument={handleDeleteCorpusDoc}
+      />
+
+      {/* Firebase Saved Document Records Modal */}
+      <DocumentRecordsModal
+        isOpen={isRecordsModalOpen}
+        onClose={() => setIsRecordsModalOpen(false)}
+        onSelectDocumentSnippet={handleSelectSnippetFromHistory}
       />
     </div>
   );

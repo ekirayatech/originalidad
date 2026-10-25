@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation for User Profile
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'displayName']) &&
+        data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'role', 'institution', 'createdAt', 'lastLoginAt']) &&
+        data.uid is string && data.uid.size() <= 128 && data.uid == request.auth.uid &&
+        data.email is string && data.email.size() <= 256 &&
+        data.displayName is string && data.displayName.size() <= 128 &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 512)) &&
+        (!('role' in data) || (data.role is string && data.role.size() <= 32)) &&
+        (!('institution' in data) || (data.institution is string && data.institution.size() <= 128)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+        (!('lastLoginAt' in data) || (data.lastLoginAt is string && data.lastLoginAt.size() <= 64));
+    }
+
+    // Validation for Analyzed Document Record
+    function isValidDocument(data) {
+      return data.keys().hasAll(['id', 'title', 'author', 'userId', 'overallSimilarity', 'originalityScore']) &&
+        data.keys().hasOnly(['id', 'title', 'author', 'wordCount', 'contentSnippet', 'overallSimilarity', 'originalityScore', 'studentPaperSimilarity', 'matchesCount', 'summary', 'teacherNotes', 'userId', 'userEmail', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.title is string && data.title.size() <= 300 &&
+        data.author is string && data.author.size() <= 200 &&
+        data.userId is string && data.userId == request.auth.uid &&
+        data.overallSimilarity is number && data.overallSimilarity >= 0 && data.overallSimilarity <= 100 &&
+        data.originalityScore is number && data.originalityScore >= 0 && data.originalityScore <= 100 &&
+        (!('wordCount' in data) || (data.wordCount is number && data.wordCount >= 0)) &&
+        (!('contentSnippet' in data) || (data.contentSnippet is string && data.contentSnippet.size() <= 10000)) &&
+        (!('studentPaperSimilarity' in data) || (data.studentPaperSimilarity is number && data.studentPaperSimilarity >= 0 && data.studentPaperSimilarity <= 100)) &&
+        (!('matchesCount' in data) || (data.matchesCount is number && data.matchesCount >= 0)) &&
+        (!('summary' in data) || (data.summary is string && data.summary.size() <= 2000)) &&
+        (!('teacherNotes' in data) || (data.teacherNotes is string && data.teacherNotes.size() <= 2000)) &&
+        (!('userEmail' in data) || (data.userEmail is string && data.userEmail.size() <= 256)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // Validation for Reference / Cotejo Documents
+    function isValidReferenceDoc(data) {
+      return data.keys().hasAll(['id', 'title', 'author', 'content', 'createdBy']) &&
+        data.keys().hasOnly(['id', 'title', 'author', 'type', 'year', 'institutionOrJournal', 'content', 'wordCount', 'createdBy', 'createdByName', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.title is string && data.title.size() <= 300 &&
+        data.author is string && data.author.size() <= 200 &&
+        data.content is string && data.content.size() <= 200000 &&
+        data.createdBy is string && data.createdBy == request.auth.uid &&
+        (!('type' in data) || (data.type is string && data.type.size() <= 64)) &&
+        (!('year' in data) || (data.year is number && data.year >= 1900 && data.year <= 2100)) &&
+        (!('institutionOrJournal' in data) || (data.institutionOrJournal is string && data.institutionOrJournal.size() <= 256)) &&
+        (!('wordCount' in data) || (data.wordCount is number && data.wordCount >= 0)) &&
+        (!('createdByName' in data) || (data.createdByName is string && data.createdByName.size() <= 128)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+    }
+
+    // USERS COLLECTION
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming());
+      allow update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming()) && incoming().uid == existing().uid && incoming().email == existing().email;
+      allow delete: if false;
+    }
+
+    // ANALYZED DOCUMENTS COLLECTION
+    match /documents/{documentId} {
+      allow get: if isSignedIn() && isValidId(documentId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(documentId) && isValidDocument(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(documentId) && resource.data.userId == request.auth.uid && isValidDocument(incoming()) && incoming().userId == existing().userId && incoming().id == existing().id && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'author', 'wordCount', 'contentSnippet', 'overallSimilarity', 'originalityScore', 'studentPaperSimilarity', 'matchesCount', 'summary', 'teacherNotes', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(documentId) && resource.data.userId == request.auth.uid;
+    }
+
+    // REFERENCE CORPUS DOCUMENTS
+    match /reference_documents/{referenceDocId} {
+      allow get: if isSignedIn() && isValidId(referenceDocId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(referenceDocId) && isValidReferenceDoc(incoming()) && incoming().createdBy == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(referenceDocId) && resource.data.createdBy == request.auth.uid && isValidReferenceDoc(incoming()) && incoming().createdBy == existing().createdBy && incoming().id == existing().id;
+      allow delete: if isSignedIn() && isValidId(referenceDocId) && resource.data.createdBy == request.auth.uid;
+    }
+  }
+}
