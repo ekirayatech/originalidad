@@ -33,18 +33,23 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
   onClose,
   onDocumentAnalyzed
 }) => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [activeMode, setActiveMode] = useState<'upload' | 'paste'>('upload');
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<ExtractedDocument | null>(null);
-  const [saveToCorpus, setSaveToCorpus] = useState(false);
+  const [saveToCorpus, setSaveToCorpus] = useState(true);
   const [saveToFirebase, setSaveToFirebase] = useState(true);
 
   // Form states
   const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
+  const [author, setAuthor] = useState(() => {
+    if (userProfile?.role === 'student') {
+      return user?.displayName || userProfile.displayName || 'Estudiante CEM';
+    }
+    return '';
+  });
   const [pastedText, setPastedText] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +74,11 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
       setExtractedData(extracted);
       setTitle(extracted.title);
       if (!author) {
-        setAuthor('Estudiante Ekirayá');
+        setAuthor(
+          userProfile?.role === 'student'
+            ? user?.displayName || 'Estudiante CEM'
+            : 'Estudiante CEM'
+        );
       }
     } catch (err: any) {
       console.error('Error procesando archivo:', err);
@@ -402,7 +411,7 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
             </div>
           )}
 
-          {/* Option to save to reference corpus (Always visible so the teacher can toggle it anytime) */}
+          {/* Option to save to reference corpus (Always visible so the teacher or student can toggle it anytime) */}
           <label className={`flex items-start gap-3 p-3.5 rounded-xl border transition-colors cursor-pointer ${
             saveToCorpus ? 'bg-sky-50 border-sky-300 shadow-xs' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/80'
           }`}>
@@ -414,13 +423,13 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
             />
             <div className="text-xs">
               <span className="font-bold text-slate-900 block flex items-center gap-1.5">
-                <span>Guardar copia en la Biblioteca de Cotejo para futuros análisis</span>
+                <span>Almacenar en la Base de Datos de Cotejo CEM para cotejo continuo</span>
                 <span className="text-[10px] font-semibold uppercase px-1.5 py-0.2 rounded-sm bg-sky-100 text-sky-800 border border-sky-200">
-                  Opción 1
+                  Cotejo Automático
                 </span>
               </span>
               <span className="text-slate-600 text-[11px] block mt-0.5 leading-snug">
-                Si activas esta casilla, el texto se añadirá automáticamente a tu repositorio local seguro para que cualquier próximo estudiante o trabajo entregado después sea comparado contra él.
+                El trabajo se almacenará en el repositorio central institucional para que todas las próximas entregas de estudiantes (@est.cem.edu.co) y docentes (@cem.edu.co) sean cotejadas contra él.
               </span>
             </div>
           </label>

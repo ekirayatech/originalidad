@@ -17,11 +17,12 @@ import {
 } from 'lucide-react';
 import {
   type SavedDocumentRecord,
-  subscribeUserDocuments,
+  subscribeUserOrSchoolDocuments,
   deleteAnalyzedDocumentRecord,
   updateDocumentNotes
 } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { GraduationCap, Database } from 'lucide-react';
 
 interface DocumentRecordsModalProps {
   isOpen: boolean;
@@ -34,15 +35,18 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
   onClose,
   onSelectDocumentSnippet
 }) => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [documents, setDocuments] = useState<SavedDocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'students' | 'mine'>('all');
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [notesText, setNotesText] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const isTeacher = userProfile?.role === 'teacher';
 
   useEffect(() => {
     if (!isOpen || !user) {
@@ -51,8 +55,9 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
     }
 
     setLoading(true);
-    const unsubscribe = subscribeUserDocuments(
+    const unsubscribe = subscribeUserOrSchoolDocuments(
       user.uid,
+      isTeacher,
       (docs) => {
         setDocuments(docs);
         setLoading(false);
@@ -64,16 +69,27 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
     );
 
     return () => unsubscribe();
-  }, [isOpen, user]);
+  }, [isOpen, user, isTeacher]);
 
   if (!isOpen) return null;
 
   const filteredDocs = documents.filter((doc) => {
+    // Filter by tab if teacher
+    if (isTeacher) {
+      if (activeFilter === 'students') {
+        const isStudentEmail = doc.userEmail?.toLowerCase().includes('@est.cem.edu.co') || doc.author.toLowerCase().includes('estudiante');
+        if (!isStudentEmail) return false;
+      } else if (activeFilter === 'mine') {
+        if (doc.userId !== user?.uid) return false;
+      }
+    }
+
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
       doc.title.toLowerCase().includes(q) ||
       doc.author.toLowerCase().includes(q) ||
+      (doc.userEmail && doc.userEmail.toLowerCase().includes(q)) ||
       (doc.teacherNotes && doc.teacherNotes.toLowerCase().includes(q))
     );
   });
@@ -129,27 +145,33 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-base sm:text-lg text-white">
-                  Historial de Registros en Firebase
+                  Historial de Evaluaciones y Cotejo
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500 text-white">
-                  Nube
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    userProfile?.role === 'student'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-indigo-500 text-white'
+                  }`}
+                >
+                  {userProfile?.roleLabel || (userProfile?.role === 'student' ? 'Estudiante CEM' : 'Docente CEM')}
                 </span>
               </div>
               <p className="text-xs text-slate-300">
-                Documentos y evaluaciones guardadas por{' '}
+                Colegio Ekirayá CEM • Conectado como{' '}
                 <span className="text-sky-300 font-semibold">{user?.displayName || user?.email}</span>
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-colors"
+            className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Quick Stats Bar */}
+        {/* Quick Stats Bar & Role Filter */}
         <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-4 sm:gap-6">
             <div>
@@ -177,11 +199,48 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por estudiante o título..."
+              placeholder="Buscar por estudiante, título..."
               className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-sky-500"
             />
           </div>
         </div>
+
+        {/* Teacher filter tabs (only shown for @cem.edu.co teachers) */}
+        {isTeacher && (
+          <div className="px-4 sm:px-6 py-2 bg-slate-100 border-b border-slate-200 flex items-center gap-2 text-xs">
+            <span className="text-slate-500 font-semibold mr-1">Vista Docente:</span>
+            <button
+              onClick={() => setActiveFilter('all')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                activeFilter === 'all'
+                  ? 'bg-sky-600 text-white shadow-xs'
+                  : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
+              }`}
+            >
+              Todas las entregas CEM ({documents.length})
+            </button>
+            <button
+              onClick={() => setActiveFilter('students')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                activeFilter === 'students'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
+              }`}
+            >
+              Entregas de Estudiantes (@est.cem.edu.co)
+            </button>
+            <button
+              onClick={() => setActiveFilter('mine')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                activeFilter === 'mine'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
+              }`}
+            >
+              Mis revisiones
+            </button>
+          </div>
+        )}
 
         {/* Feedback Message */}
         {statusMessage && (
@@ -203,12 +262,12 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
                 <FileText className="w-6 h-6" />
               </div>
               <h4 className="font-bold text-sm text-slate-800 mb-1">
-                {searchQuery ? 'No hay registros que coincidan' : 'No tienes documentos guardados aún'}
+                {searchQuery ? 'No hay registros que coincidan' : 'No hay documentos en este filtro'}
               </h4>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
                 {searchQuery
                   ? 'Intenta con otro término de búsqueda.'
-                  : 'Cuando analices un ensayo o trabajo de un estudiante, haz clic en "Guardar en Firebase" o marca la casilla al subir el documento para almacenarlo en tu historial en la nube.'}
+                  : 'Cada vez que revises un documento en el sistema, se almacenará automáticamente en la base de datos y en la biblioteca de cotejo institucional.'}
               </p>
             </div>
           ) : (
@@ -220,6 +279,10 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
                 hour: '2-digit',
                 minute: '2-digit'
               });
+
+              const isStudentDoc =
+                doc.userEmail?.toLowerCase().includes('@est.cem.edu.co') ||
+                doc.author.toLowerCase().includes('estudiante');
 
               const isEditingThisNotes = editingNotesId === doc.id;
 
@@ -236,6 +299,29 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
                         <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded-sm">
                           {doc.wordCount} palabras
                         </span>
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            isStudentDoc
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                              : 'bg-indigo-50 text-indigo-800 border border-indigo-200'
+                          }`}
+                        >
+                          {isStudentDoc ? (
+                            <>
+                              <GraduationCap className="w-3 h-3" />
+                              <span>Estudiante CEM</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShieldCheck className="w-3 h-3" />
+                              <span>Docente CEM</span>
+                            </>
+                          )}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-sky-50 text-sky-800 px-2 py-0.5 rounded-full border border-sky-200">
+                          <Database className="w-3 h-3 text-sky-600" />
+                          <span>Cotejo Activo</span>
+                        </span>
                         <span className="text-[10px] text-slate-400 flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {formattedDate}
@@ -244,6 +330,9 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
                       <p className="text-xs text-slate-600 flex items-center gap-1.5">
                         <User className="w-3.5 h-3.5 text-slate-400" />
                         <span className="font-semibold text-slate-700">{doc.author}</span>
+                        {doc.userEmail && (
+                          <span className="text-slate-400 font-mono text-[11px]">({doc.userEmail})</span>
+                        )}
                       </p>
                     </div>
 

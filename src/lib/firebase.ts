@@ -91,16 +91,81 @@ export async function testFirestoreConnection() {
   }
 }
 
+// User Role Definition
+export type UserRole = 'student' | 'teacher' | 'admin' | 'reviewer';
+
 // User Profile Interface
 export interface UserProfile {
   uid: string;
   email: string;
   displayName: string;
   photoURL?: string;
-  role?: 'teacher' | 'admin' | 'reviewer';
+  role?: UserRole;
   institution?: string;
+  roleLabel?: string;
   createdAt?: string;
   lastLoginAt?: string;
+}
+
+// Helper to determine role & institution from school email
+export function determineUserRoleAndInstitution(email?: string | null): {
+  role: UserRole;
+  institution: string;
+  roleLabel: string;
+  isStudent: boolean;
+  isTeacher: boolean;
+} {
+  if (!email) {
+    return {
+      role: 'reviewer',
+      institution: 'Colegio Ekirayá - CEM',
+      roleLabel: 'Usuario Invitado',
+      isStudent: false,
+      isTeacher: false
+    };
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  // Student institutional domains: @est.cem.edu.co or typo with comma @est,cem.edu.co
+  if (
+    cleanEmail.endsWith('@est.cem.edu.co') ||
+    cleanEmail.includes('@est.cem.edu.co') ||
+    cleanEmail.includes('@est,cem.edu.co') ||
+    cleanEmail.endsWith('@est.ekiraya.edu.co')
+  ) {
+    return {
+      role: 'student',
+      institution: 'Colegio Ekirayá - CEM (Estudiantes)',
+      roleLabel: 'Estudiante CEM',
+      isStudent: true,
+      isTeacher: false
+    };
+  }
+
+  // Teacher institutional domains: @cem.edu.co or @ekiraya.edu.co
+  if (
+    cleanEmail.endsWith('@cem.edu.co') ||
+    cleanEmail.includes('@cem.edu.co') ||
+    cleanEmail.endsWith('@ekiraya.edu.co')
+  ) {
+    return {
+      role: 'teacher',
+      institution: 'Colegio Ekirayá - CEM (Docentes)',
+      roleLabel: 'Docente CEM',
+      isStudent: false,
+      isTeacher: true
+    };
+  }
+
+  // Default fallback for external or personal Google accounts during testing
+  return {
+    role: 'teacher',
+    institution: 'Colegio Ekirayá - CEM (Acceso Institucional)',
+    roleLabel: 'Docente CEM (Externo)',
+    isStudent: false,
+    isTeacher: true
+  };
 }
 
 // Analyzed Document Record in Firestore
@@ -148,31 +213,35 @@ export async function syncUserProfile(user: FirebaseUser): Promise<UserProfile> 
   const now = new Date().toISOString();
   const path = `users/${user.uid}`;
 
+  const roleInfo = determineUserRoleAndInstitution(user.email);
+
   try {
     const existingDoc = await getDoc(userRef);
     if (!existingDoc.exists()) {
       const newProfile: UserProfile = {
         uid: user.uid,
-        email: user.email || 'sin-correo@ekiraya.edu.co',
-        displayName: user.displayName || user.email?.split('@')[0] || 'Docente Ekirayá',
+        email: user.email || 'sin-correo@cem.edu.co',
+        displayName: user.displayName || user.email?.split('@')[0] || (roleInfo.isStudent ? 'Estudiante CEM' : 'Docente CEM'),
         photoURL: user.photoURL || '',
-        role: 'teacher',
-        institution: 'Colegio Bilingüe Ekirayá',
+        role: roleInfo.role,
+        institution: roleInfo.institution,
         createdAt: now,
         lastLoginAt: now
       };
       await setDoc(userRef, newProfile);
-      return newProfile;
+      return { ...newProfile, roleLabel: roleInfo.roleLabel };
     } else {
       const existingData = existingDoc.data() as UserProfile;
       const updatedProfile: UserProfile = {
         ...existingData,
+        role: roleInfo.role,
+        institution: roleInfo.institution,
         lastLoginAt: now,
         displayName: user.displayName || existingData.displayName,
         photoURL: user.photoURL || existingData.photoURL || ''
       };
       await setDoc(userRef, updatedProfile, { merge: true });
-      return updatedProfile;
+      return { ...updatedProfile, roleLabel: roleInfo.roleLabel };
     }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
@@ -365,3 +434,91 @@ export async function deleteReferenceDocFromFirestore(refDocId: string): Promise
     handleFirestoreError(error, OperationType.DELETE, path);
   }
 }
+
+// -------------------------------------------------------------
+// Automatic Cotejo & Evaluation Dual-Storage
+// "una vez haga la revisión de documentos, los almacene para ser
+// la de la base de datos y sean cotejados en próximos usos o revisiones"
+// -------------------------------------------------------------
+export async function autoIndexAnalyzedDocument(
+  analysis: AnalysisSummary,
+  fullText: string,
+  teacherNotes: string = ''
+): Promise<{
+  savedRecord: SavedDocumentRecord;
+  referenceDocId: string;
+}> {
+  if (!auth.currentUser) {
+    throw new Error('Debes iniciar sesión con tu cuenta institucional para indexar en la nube.');
+  }
+
+  // 1. Save document record in evaluations history
+  const savedRecord = await saveAnalyzedDocumentRecord(analysis, fullText, teacherNotes);
+
+  // 2. Automatically save copy to reference corpus (Biblioteca de Cotejo Compartida CEM)
+  const simpleHash = Math.abs(
+    fullText.split('').reduce((acc, char) => (acc * 31 + char.charCodeAt(0)) | 0, 0)
+  ).toString(36);
+  const cleanTitleSlug = (analysis.title || 'trabajo')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '_')
+    .slice(0, 30);
+  const refDocId = `cem_${cleanTitleSlug}_${simpleHash}`.slice(0, 100);
+
+  const refPayload: ReferenceDocument = {
+    id: refDocId,
+    title: analysis.title || 'Entrega de Estudiante CEM',
+    author: analysis.author || auth.currentUser.displayName || 'Estudiante CEM',
+    type: 'student_paper',
+    year: new Date().getFullYear(),
+    institutionOrJournal: 'Colegio Ekirayá - CEM (Repositorio Institucional de Cotejo)',
+    content: fullText,
+    isCustomUploaded: true
+  };
+
+  await saveReferenceCorpusDocToFirestore(refPayload);
+
+  return {
+    savedRecord,
+    referenceDocId: refDocId
+  };
+}
+
+// Subscribe to documents: teachers see school-wide submissions, students see their own
+export function subscribeUserOrSchoolDocuments(
+  userId: string,
+  isTeacher: boolean,
+  onData: (docs: SavedDocumentRecord[]) => void,
+  onError?: (err: Error) => void
+) {
+  const path = 'documents';
+  const q = isTeacher
+    ? collection(db, path)
+    : query(collection(db, path), where('userId', '==', userId));
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const records: SavedDocumentRecord[] = [];
+      snapshot.forEach((snap) => {
+        records.push(snap.data() as SavedDocumentRecord);
+      });
+      records.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      onData(records);
+    },
+    (error) => {
+      if (onError) {
+        try {
+          handleFirestoreError(error, OperationType.LIST, path);
+        } catch (e: any) {
+          onError(e);
+        }
+      } else {
+        handleFirestoreError(error, OperationType.LIST, path);
+      }
+    }
+  );
+}
+

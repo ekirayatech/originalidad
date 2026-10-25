@@ -367,15 +367,15 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
                 }`}
                 title={
                   isAlreadyInCorpus
-                    ? 'Este trabajo ya se encuentra registrado en el corpus local de cotejo'
-                    : 'Guardar este trabajo en el corpus para cotejarlo con futuros documentos'
+                    ? 'Este documento está indexado en la base de datos de cotejo institucional CEM'
+                    : 'Almacenar copia en la base de datos para contrastar contra próximas entregas'
                 }
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>
                   {isAlreadyInCorpus
-                    ? '✓ En Biblioteca de Cotejo'
-                    : '+ Guardar en Biblioteca para Contrastar'}
+                    ? '✓ Indexado en Cotejo CEM'
+                    : '+ Almacenar en Cotejo CEM'}
                 </span>
               </button>
             )}
@@ -389,15 +389,15 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
                     ? 'bg-indigo-50 text-indigo-800 border border-indigo-300 cursor-default'
                     : 'bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white cursor-pointer'
                 }`}
-                title="Guardar registro completo de esta evaluación en la base de datos de Firebase"
+                title="Historial de evaluaciones de estudiantes y docentes en Firestore"
               >
                 <Cloud className="w-3.5 h-3.5" />
                 <span>
                   {isSavingToFirebase
-                    ? 'Guardando en Firebase...'
+                    ? 'Almacenando en Firestore...'
                     : isSavedToFirebase
-                    ? '✓ Guardado en Firebase'
-                    : 'Guardar Registro en Firebase'}
+                    ? '✓ Almacenado en Base de Datos'
+                    : 'Almacenar en Base de Datos'}
                 </span>
               </button>
             )}

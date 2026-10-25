@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Navbar } from './components/Navbar';
 import { ColorFunnel } from './components/ColorFunnel';
 import { ReportViewer } from './components/ReportViewer';
@@ -22,7 +22,8 @@ import {
   saveReferenceCorpusDocToFirestore,
   subscribeReferenceDocuments,
   deleteReferenceDocFromFirestore,
-  subscribeUserDocuments,
+  autoIndexAnalyzedDocument,
+  subscribeUserOrSchoolDocuments,
   type SavedDocumentRecord
 } from './lib/firebase';
 import {
@@ -33,11 +34,16 @@ import {
   BookOpen,
   Download,
   FileSpreadsheet,
-  UploadCloud
+  UploadCloud,
+  GraduationCap,
+  CheckCircle2,
+  ShieldCheck,
+  Database,
+  LogIn
 } from 'lucide-react';
 
 export default function App() {
-  const { user } = useAuth();
+  const { user, userProfile, login } = useAuth();
 
   // Corpus state (default + custom stored in localStorage + Firebase cloud sync)
   const [corpus, setCorpus] = useState<ReferenceDocument[]>(() => {
@@ -88,16 +94,30 @@ export default function App() {
   const [savedRecordsCount, setSavedRecordsCount] = useState<number>(0);
   const [isSavingToFirebase, setIsSavingToFirebase] = useState(false);
   const [isSavedToFirebase, setIsSavedToFirebase] = useState(false);
+  const [autoIndexMessage, setAutoIndexMessage] = useState<string | null>(null);
+  const lastIndexedKeyRef = useRef<string>('');
 
-  // Listen to user's saved records in Firestore
+  // If a student logs in, default their author name automatically
+  useEffect(() => {
+    if (userProfile?.role === 'student') {
+      const studentName = userProfile.displayName || user?.displayName || 'Estudiante CEM';
+      if (author === 'Sofía Gómez' || author === 'Estudiante Ekirayá' || !author.trim()) {
+        setAuthor(studentName);
+      }
+    }
+  }, [userProfile, user, author]);
+
+  // Listen to saved records in Firestore (teachers see school-wide, students see their own)
   useEffect(() => {
     if (!user) {
       setSavedRecordsCount(0);
       return;
     }
 
-    const unsubscribe = subscribeUserDocuments(
+    const isTeacher = userProfile?.role === 'teacher';
+    const unsubscribe = subscribeUserOrSchoolDocuments(
       user.uid,
+      isTeacher,
       (docs) => {
         setSavedRecordsCount(docs.length);
       },
@@ -105,7 +125,7 @@ export default function App() {
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, userProfile]);
 
   // Sync reference corpus with Firebase Firestore when logged in
   useEffect(() => {
@@ -138,6 +158,46 @@ export default function App() {
     }
     return runOriginalityAnalysis(content, title, author, corpus, filters);
   }, [content, title, author, corpus, filters]);
+
+  // AUTOMATIC ARCHIVE & COTEJO REPOSITORY
+  // "una vez haga la revisión de documentos, los almacene para ser la de la base de datos y sean cotejados en próximos usos o revisiones"
+  useEffect(() => {
+    if (!analysis || !user || !content.trim()) return;
+
+    const currentKey = `${analysis.title}__${analysis.totalWords}__${analysis.similarityIndex}__${content.slice(0, 150)}`;
+    if (lastIndexedKeyRef.current === currentKey) return;
+
+    let isSubscribed = true;
+
+    const performAutoArchive = async () => {
+      try {
+        setIsSavingToFirebase(true);
+        await autoIndexAnalyzedDocument(analysis, content);
+        if (isSubscribed) {
+          lastIndexedKeyRef.current = currentKey;
+          setIsSavedToFirebase(true);
+          const roleLabel = userProfile?.role === 'student' ? 'Estudiante CEM' : 'Docente CEM';
+          setAutoIndexMessage(`Documento indexado automáticamente en la Base de Datos de Cotejo CEM (${roleLabel})`);
+          setTimeout(() => {
+            if (isSubscribed) setAutoIndexMessage(null);
+          }, 6000);
+        }
+      } catch (err) {
+        console.error('Error durante indexación automática en Firestore:', err);
+      } finally {
+        if (isSubscribed) {
+          setIsSavingToFirebase(false);
+        }
+      }
+    };
+
+    const timer = setTimeout(performAutoArchive, 700);
+
+    return () => {
+      isSubscribed = false;
+      clearTimeout(timer);
+    };
+  }, [analysis, user, content, userProfile]);
 
   // Handler to update filters
   const handleUpdateFilters = (newFilters: Partial<AnalysisFilters>) => {
@@ -319,6 +379,67 @@ export default function App() {
             totalSentences={analysis.totalSentences}
             onOpenCommunityModal={() => setIsCommunityModalOpen(true)}
           />
+
+          {/* Institutional Cotejo Status Banner */}
+          {user ? (
+            <div className="bg-sky-950 text-white px-4 py-2 text-xs border-b border-sky-800">
+              <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center flex-wrap gap-2">
+                  <Database className="w-4 h-4 text-sky-400 shrink-0" />
+                  <span>
+                    <strong>Repositorio de Cotejo CEM:</strong> Documento indexado automáticamente para cotejar contra futuras entregas.
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded-full text-[11px] ${
+                      userProfile?.role === 'student'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    }`}
+                  >
+                    {userProfile?.role === 'student' ? (
+                      <>
+                        <GraduationCap className="w-3 h-3" />
+                        <span>Estudiante CEM: {user.email}</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="w-3 h-3" />
+                        <span>Docente CEM: {user.email}</span>
+                      </>
+                    )}
+                  </span>
+                </div>
+                {autoIndexMessage ? (
+                  <div className="flex items-center gap-1.5 text-emerald-300 font-semibold bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-700/50 animate-in fade-in">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>{autoIndexMessage}</span>
+                  </div>
+                ) : (
+                  <span className="text-[11px] text-sky-300/80 hidden lg:inline">
+                    Base de Datos en Tiempo Real (Firestore)
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-amber-950/90 text-amber-100 px-4 py-2 text-xs border-b border-amber-800/80">
+              <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Database className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>
+                    <strong>Acceso Institucional CEM:</strong> Los estudiantes ingresan con <code>@est.cem.edu.co</code> y docentes con <code>@cem.edu.co</code> para almacenar y cotejar automáticamente en la base de datos.
+                  </span>
+                </div>
+                <button
+                  onClick={() => login()}
+                  className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-md shadow-xs transition-all cursor-pointer text-xs"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Ingresar con Google CEM</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Subheader Tabs */}
           <div className="bg-white border-b border-slate-200 px-4 sm:px-6">

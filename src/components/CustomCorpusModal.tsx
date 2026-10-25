@@ -211,10 +211,10 @@ export const CustomCorpusModal: React.FC<CustomCorpusModalProps> = ({
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-sm sm:text-lg text-white truncate">
-                Biblioteca de Cotejo y Corpus de Referencia
+                Base de Datos y Repositorio Central de Cotejo CEM
               </h3>
               <p className="text-[11px] sm:text-xs text-slate-300 truncate">
-                Coteja trabajos nuevos contra entregas anteriores de estudiantes, leyes y publicaciones
+                Coteja entregas nuevas contra trabajos de estudiantes (@est.cem.edu.co), docentes (@cem.edu.co) y leyes académicas
               </p>
             </div>
           </div>

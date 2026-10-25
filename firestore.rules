@@ -76,9 +76,17 @@ service cloud.firestore {
         (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
     }
 
+    // Helper to check if user is a teacher from Colegio Ekirayá - CEM
+    function isCemTeacher() {
+      return isSignedIn() && (
+        request.auth.token.email.matches('.*@cem\\.edu\\.co$') ||
+        request.auth.token.email.matches('.*@ekiraya\\.edu\\.co$')
+      );
+    }
+
     // USERS COLLECTION
     match /users/{userId} {
-      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow get: if isSignedIn() && (request.auth.uid == userId || isCemTeacher());
       allow list: if false;
       allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming());
       allow update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming()) && incoming().uid == existing().uid && incoming().email == existing().email;
@@ -87,20 +95,20 @@ service cloud.firestore {
 
     // ANALYZED DOCUMENTS COLLECTION
     match /documents/{documentId} {
-      allow get: if isSignedIn() && isValidId(documentId) && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && isValidId(documentId) && (resource.data.userId == request.auth.uid || isCemTeacher());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isCemTeacher());
       allow create: if isSignedIn() && isValidId(documentId) && isValidDocument(incoming()) && incoming().userId == request.auth.uid;
-      allow update: if isSignedIn() && isValidId(documentId) && resource.data.userId == request.auth.uid && isValidDocument(incoming()) && incoming().userId == existing().userId && incoming().id == existing().id && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'author', 'wordCount', 'contentSnippet', 'overallSimilarity', 'originalityScore', 'studentPaperSimilarity', 'matchesCount', 'summary', 'teacherNotes', 'updatedAt']);
-      allow delete: if isSignedIn() && isValidId(documentId) && resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(documentId) && (resource.data.userId == request.auth.uid || isCemTeacher()) && isValidDocument(incoming()) && incoming().userId == existing().userId && incoming().id == existing().id && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'author', 'wordCount', 'contentSnippet', 'overallSimilarity', 'originalityScore', 'studentPaperSimilarity', 'matchesCount', 'summary', 'teacherNotes', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(documentId) && (resource.data.userId == request.auth.uid || isCemTeacher());
     }
 
-    // REFERENCE CORPUS DOCUMENTS
+    // REFERENCE CORPUS DOCUMENTS (BIBLIOTECA CENTRAL DE COTEJO)
     match /reference_documents/{referenceDocId} {
       allow get: if isSignedIn() && isValidId(referenceDocId);
       allow list: if isSignedIn();
       allow create: if isSignedIn() && isValidId(referenceDocId) && isValidReferenceDoc(incoming()) && incoming().createdBy == request.auth.uid;
       allow update: if isSignedIn() && isValidId(referenceDocId) && resource.data.createdBy == request.auth.uid && isValidReferenceDoc(incoming()) && incoming().createdBy == existing().createdBy && incoming().id == existing().id;
-      allow delete: if isSignedIn() && isValidId(referenceDocId) && resource.data.createdBy == request.auth.uid;
+      allow delete: if isSignedIn() && isValidId(referenceDocId) && (resource.data.createdBy == request.auth.uid || isCemTeacher());
     }
   }
 }

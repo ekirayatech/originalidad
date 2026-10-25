@@ -9,7 +9,7 @@
         "email": { "type": "string", "maxLength": 256 },
         "displayName": { "type": "string", "maxLength": 128 },
         "photoURL": { "type": "string", "maxLength": 512 },
-        "role": { "type": "string", "enum": ["teacher", "admin", "reviewer"], "maxLength": 32 },
+        "role": { "type": "string", "enum": ["student", "teacher", "admin", "reviewer"], "maxLength": 32 },
         "institution": { "type": "string", "maxLength": 128 },
         "createdAt": { "type": "string", "maxLength": 64 },
         "lastLoginAt": { "type": "string", "maxLength": 64 }
