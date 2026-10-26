@@ -22,7 +22,8 @@ import {
   type SavedDocumentRecord,
   subscribeUserOrSchoolDocuments,
   deleteAnalyzedDocumentRecord,
-  updateDocumentNotes
+  updateDocumentNotes,
+  clearAllEvaluationAndCotejoRecords
 } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { GraduationCap, Database } from 'lucide-react';
@@ -38,11 +39,12 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
   onClose,
   onSelectDocumentSnippet
 }) => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, isAdmin } = useAuth();
   const [documents, setDocuments] = useState<SavedDocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'students' | 'mine'>('all');
+  const [isPurging, setIsPurging] = useState(false);
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [notesText, setNotesText] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
@@ -129,6 +131,24 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
     }
   };
 
+  const handlePurgeAll = async () => {
+    const confirmation = window.prompt(
+      '¿Deseas eliminar permanentemente TODOS los registros de análisis y cotejo guardados en Firebase?\n\nPara confirmar escribe "BORRAR":'
+    );
+    if (confirmation !== 'BORRAR') return;
+
+    setIsPurging(true);
+    try {
+      const res = await clearAllEvaluationAndCotejoRecords();
+      setStatusMessage(`✓ Se eliminaron todos los registros (${res.documentsCleared} evaluaciones).`);
+      setTimeout(() => setStatusMessage(null), 4000);
+    } catch (err: any) {
+      alert(`Error al purgar registros: ${err?.message || err}`);
+    } finally {
+      setIsPurging(false);
+    }
+  };
+
   const avgOriginality =
     documents.length > 0
       ? Math.round(documents.reduce((acc, d) => acc + d.originalityScore, 0) / documents.length)
@@ -195,16 +215,29 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
             </div>
           </div>
 
-          {/* Search box */}
-          <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por estudiante, título..."
-              className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-sky-500"
-            />
+          {/* Search box and purge button */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {isAdmin && documents.length > 0 && (
+              <button
+                onClick={handlePurgeAll}
+                disabled={isPurging}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg text-xs font-semibold cursor-pointer disabled:opacity-50"
+                title="Borrar todos los registros de la base de datos"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Borrar todo</span>
+              </button>
+            )}
+            <div className="relative flex-1 sm:w-60">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar por estudiante, título..."
+                className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
           </div>
         </div>
 

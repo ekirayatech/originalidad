@@ -108,18 +108,18 @@ service cloud.firestore {
         (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
     }
 
-    // Validation for Institutional User (Docente / Estudiante with Taller & Password)
+    // Validation for Institutional User (Docente / Estudiante / Admin with Taller & Password)
     function isValidInstitutionalUser(data) {
-      return data.keys().hasAll(['id', 'nombre', 'apellido', 'taller', 'contrasena', 'rol']) &&
+      return data.keys().hasAll(['id', 'nombre', 'apellido', 'taller', 'contrasena', 'rol', 'email']) &&
         data.keys().hasOnly(['id', 'nombre', 'apellido', 'displayName', 'taller', 'contrasena', 'rol', 'email', 'createdAt', 'createdBy', 'uid']) &&
         data.id is string && data.id.size() <= 128 &&
         data.nombre is string && data.nombre.size() <= 128 &&
         data.apellido is string && data.apellido.size() <= 128 &&
         data.taller is string && data.taller.size() <= 128 &&
         data.contrasena is string && data.contrasena.size() <= 128 &&
-        data.rol in ['docente', 'estudiante'] &&
+        data.rol in ['docente', 'estudiante', 'admin'] &&
+        data.email is string && data.email.size() <= 256 && (data.email.matches('.*@est\\.cem\\.edu\\.co$') || data.email.matches('.*@cem\\.edu\\.co$')) &&
         (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 256)) &&
-        (!('email' in data) || (data.email is string && data.email.size() <= 256)) &&
         (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
         (!('createdBy' in data) || (data.createdBy is string && data.createdBy.size() <= 128)) &&
         (!('uid' in data) || (data.uid is string && data.uid.size() <= 128));

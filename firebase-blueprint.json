@@ -85,13 +85,13 @@
         "displayName": { "type": "string", "maxLength": 256 },
         "taller": { "type": "string", "maxLength": 128 },
         "contrasena": { "type": "string", "maxLength": 128 },
-        "rol": { "type": "string", "enum": ["docente", "estudiante"], "maxLength": 32 },
-        "email": { "type": "string", "maxLength": 256 },
+        "rol": { "type": "string", "enum": ["docente", "estudiante", "admin"], "maxLength": 32 },
+        "email": { "type": "string", "maxLength": 256, "pattern": "^[a-zA-Z0-9._%+-]+@(est\\.cem\\.edu\\.co|cem\\.edu\\.co)$" },
         "createdAt": { "type": "string", "maxLength": 64 },
         "createdBy": { "type": "string", "maxLength": 128 },
         "uid": { "type": "string", "maxLength": 128 }
       },
-      "required": ["id", "nombre", "apellido", "taller", "contrasena", "rol"]
+      "required": ["id", "nombre", "apellido", "taller", "contrasena", "rol", "email"]
     }
   },
   "firestore": {

@@ -109,7 +109,7 @@ export interface LegalRegulation {
   relevanceToOriginalityAndAI: string;
 }
 
-export type InstitutionalUserRole = 'docente' | 'estudiante';
+export type InstitutionalUserRole = 'docente' | 'estudiante' | 'admin';
 
 export interface InstitutionalUser {
   id: string;

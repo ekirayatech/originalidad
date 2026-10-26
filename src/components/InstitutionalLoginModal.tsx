@@ -48,12 +48,29 @@ export const InstitutionalLoginModal: React.FC<InstitutionalLoginModalProps> = (
         setSuccessMessage(null);
       }, 1000);
     } catch (err: any) {
-      console.error(err);
-      setErrorMessage(
-        err?.message?.includes('popup-closed-by-user')
-          ? 'La ventana emergente de Google fue cerrada antes de completar el acceso.'
-          : 'No se pudo completar el acceso con Google. Intenta de nuevo o ingresa con tu contraseña institucional.'
-      );
+      console.error('Error Google Auth:', err);
+      const code = err?.code || '';
+      const msg = err?.message || '';
+
+      if (code === 'auth/popup-blocked') {
+        setErrorMessage(
+          'El navegador bloqueó la ventana emergente de Google. Por favor haz clic en el ícono de ventana bloqueada en tu navegador para permitir ventanas emergentes, o inicia sesión usando la pestaña "Taller y Contraseña".'
+        );
+      } else if (code === 'auth/popup-closed-by-user') {
+        setErrorMessage(
+          'La ventana emergente de Google fue cerrada antes de completar el inicio de sesión.'
+        );
+      } else if (code === 'auth/unauthorized-domain') {
+        setErrorMessage(
+          `El dominio actual (${typeof window !== 'undefined' ? window.location.hostname : 'preview'}) no está en la lista de dominios autorizados de Firebase Console. Puedes ingresar inmediatamente mediante la pestaña "Taller y Contraseña" con tu correo y contraseña institucional.`
+        );
+      } else if (msg.includes('Acceso denegado') || msg.includes('no pertenece a los dominios')) {
+        setErrorMessage(msg);
+      } else {
+        setErrorMessage(
+          msg || 'No se pudo completar el acceso con Google. Intenta nuevamente o usa tu Taller y Contraseña.'
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -64,14 +81,26 @@ export const InstitutionalLoginModal: React.FC<InstitutionalLoginModalProps> = (
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (!identifier.trim() || !contrasena.trim()) {
+    const cleanIdentifier = identifier.trim();
+    if (!cleanIdentifier || !contrasena.trim()) {
       setErrorMessage('Por favor ingresa tu usuario/correo y tu contraseña.');
       return;
     }
 
+    // If identifier is an email, check domain
+    if (cleanIdentifier.includes('@')) {
+      const lower = cleanIdentifier.toLowerCase();
+      if (!lower.endsWith('@est.cem.edu.co') && !lower.endsWith('@cem.edu.co')) {
+        setErrorMessage(
+          'El correo ingresado no pertenece a la institución. Solo se admiten correos @est.cem.edu.co (Estudiantes) o @cem.edu.co (Docentes y Administradores).'
+        );
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
-      const user = await loginWithCredentials(identifier, contrasena);
+      const user = await loginWithCredentials(cleanIdentifier, contrasena);
       setSuccessMessage(`Bienvenido, ${user.displayName} (${user.rol.toUpperCase()} - ${user.taller})`);
       setTimeout(() => {
         onClose();

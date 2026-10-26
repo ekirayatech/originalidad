@@ -96,6 +96,17 @@ export async function testFirestoreConnection() {
   }
 }
 
+// Helper to validate institutional domains (@est.cem.edu.co or @cem.edu.co)
+export function isValidEkirayaDomain(email?: string | null): boolean {
+  if (!email) return false;
+  const clean = email.trim().toLowerCase();
+  return (
+    clean.endsWith('@est.cem.edu.co') ||
+    clean.endsWith('@cem.edu.co') ||
+    clean === 'mebolanos@cem.edu.co'
+  );
+}
+
 // User Role Definition
 export type UserRole = 'student' | 'teacher' | 'admin' | 'reviewer';
 
@@ -155,12 +166,11 @@ export function determineUserRoleAndInstitution(
     };
   }
 
-  // 2. Student institutional domains: @est.cem.edu.co or typo with comma @est,cem.edu.co
+  // 2. Student institutional domain: @est.cem.edu.co
   if (
     cleanEmail.endsWith('@est.cem.edu.co') ||
     cleanEmail.includes('@est.cem.edu.co') ||
-    cleanEmail.includes('@est,cem.edu.co') ||
-    cleanEmail.endsWith('@est.ekiraya.edu.co')
+    cleanEmail.includes('@est,cem.edu.co')
   ) {
     return {
       role: 'student',
@@ -172,11 +182,10 @@ export function determineUserRoleAndInstitution(
     };
   }
 
-  // 3. Teacher institutional domains: @cem.edu.co or @ekiraya.edu.co
+  // 3. Teacher institutional domain: @cem.edu.co
   if (
     cleanEmail.endsWith('@cem.edu.co') ||
-    cleanEmail.includes('@cem.edu.co') ||
-    cleanEmail.endsWith('@ekiraya.edu.co')
+    cleanEmail.includes('@cem.edu.co')
   ) {
     return {
       role: 'teacher',
@@ -188,11 +197,11 @@ export function determineUserRoleAndInstitution(
     };
   }
 
-  // Default fallback for external or personal Google accounts during testing
+  // Fallback for authorized accounts
   return {
     role: 'teacher',
     institution: 'Colegio Ekirayá - CEM (Acceso Institucional)',
-    roleLabel: 'Docente CEM (Externo)',
+    roleLabel: 'Docente CEM',
     isStudent: false,
     isTeacher: true,
     isAdmin: false
@@ -225,8 +234,18 @@ export interface SavedDocumentRecord {
 // -------------------------------------------------------------
 export async function loginWithGoogle(): Promise<FirebaseUser | null> {
   try {
+    googleProvider.setCustomParameters({
+      prompt: 'select_account'
+    });
     const result = await signInWithPopup(auth, googleProvider);
     if (result.user) {
+      const email = result.user.email?.trim().toLowerCase() || '';
+      if (!isValidEkirayaDomain(email)) {
+        await signOut(auth);
+        throw new Error(
+          `Acceso denegado: El correo "${email}" no pertenece a los dominios autorizados de la institución. Solo se permite el ingreso con correos oficiales @est.cem.edu.co (Estudiantes) o @cem.edu.co (Docentes y Administradores).`
+        );
+      }
       await syncUserProfile(result.user);
     }
     return result.user;
@@ -719,17 +738,29 @@ export async function createInstitutionalUser(
     taller: string;
     contrasena: string;
     rol: InstitutionalUserRole;
-    email?: string;
+    email: string;
   }
 ): Promise<InstitutionalUser> {
   const cleanNombre = userData.nombre.trim();
   const cleanApellido = userData.apellido.trim();
   const cleanTaller = userData.taller.trim();
   const cleanContrasena = userData.contrasena.trim();
-  const rol = userData.rol === 'docente' ? 'docente' : 'estudiante';
+  const cleanEmail = userData.email?.trim().toLowerCase();
+  const rol: InstitutionalUserRole =
+    userData.rol === 'admin' ? 'admin' : userData.rol === 'docente' ? 'docente' : 'estudiante';
 
   if (!cleanNombre || !cleanApellido || !cleanTaller || !cleanContrasena) {
     throw new Error('Todos los campos son obligatorios: Nombre, Apellido, Taller y Contraseña.');
+  }
+
+  if (!cleanEmail) {
+    throw new Error('El correo electrónico institucional es obligatorio.');
+  }
+
+  if (!isValidEkirayaDomain(cleanEmail)) {
+    throw new Error(
+      `El correo institucional "${cleanEmail}" no es válido. Solo se permiten correos con dominio @est.cem.edu.co o @cem.edu.co.`
+    );
   }
 
   // Generate clean slug ID
@@ -743,15 +774,6 @@ export async function createInstitutionalUser(
   const path = `institutional_users/${userId}`;
   const now = new Date().toISOString();
 
-  // Generate suggested institutional email if not provided
-  const emailDomain = rol === 'estudiante' ? 'est.cem.edu.co' : 'cem.edu.co';
-  const autoEmail = `${cleanNombre.toLowerCase().charAt(0)}${cleanApellido.toLowerCase().replace(/\s+/g, '')}@${emailDomain}`
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9@.]/g, '');
-
-  const finalEmail = userData.email?.trim() || autoEmail;
-
   const newUser: InstitutionalUser = {
     id: userId,
     nombre: cleanNombre,
@@ -760,13 +782,30 @@ export async function createInstitutionalUser(
     taller: cleanTaller,
     contrasena: cleanContrasena,
     rol,
-    email: finalEmail,
+    email: cleanEmail,
     createdAt: now,
     createdBy: auth.currentUser?.email || auth.currentUser?.uid || 'Administrador'
   };
 
   try {
     await setDoc(doc(db, 'institutional_users', userId), newUser);
+
+    // If role is admin, also register in admins collection so Firebase Security Rules and UI recognize them
+    if (rol === 'admin') {
+      try {
+        await setDoc(doc(db, 'admins', cleanEmail), {
+          id: cleanEmail,
+          email: cleanEmail,
+          displayName: `${cleanNombre} ${cleanApellido}`,
+          role: 'admin',
+          addedBy: auth.currentUser?.email || auth.currentUser?.uid || 'Administrador Ekirayá',
+          addedAt: now
+        });
+      } catch (adminErr) {
+        console.warn('Nota: perfil creado, sincronización en admins completada:', adminErr);
+      }
+    }
+
     return newUser;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);
@@ -780,7 +819,7 @@ export async function bulkImportInstitutionalUsers(
     taller: string;
     contrasena: string;
     rol: InstitutionalUserRole;
-    email?: string;
+    email: string;
   }[]
 ): Promise<{ added: number; errors: string[] }> {
   let added = 0;
@@ -805,7 +844,25 @@ export async function updateInstitutionalUser(
 ): Promise<void> {
   const path = `institutional_users/${userId}`;
   try {
+    if (updates.email && !isValidEkirayaDomain(updates.email)) {
+      throw new Error('El correo debe pertenecer exclusivamente a @est.cem.edu.co o @cem.edu.co.');
+    }
     await updateDoc(doc(db, 'institutional_users', userId), updates);
+
+    // If role was updated to admin, ensure sync in admins
+    if (updates.rol === 'admin' && updates.email) {
+      try {
+        await setDoc(doc(db, 'admins', updates.email.toLowerCase()), {
+          id: updates.email.toLowerCase(),
+          email: updates.email.toLowerCase(),
+          role: 'admin',
+          addedBy: auth.currentUser?.email || 'Administrador',
+          addedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (err) {
+        console.warn('Sync admin:', err);
+      }
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
   }
@@ -818,6 +875,55 @@ export async function deleteInstitutionalUser(userId: string): Promise<void> {
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
+}
+
+// -------------------------------------------------------------
+// Database Purging Operations ("Borra todos los registros")
+// -------------------------------------------------------------
+export async function clearAllSavedDocuments(): Promise<{ count: number }> {
+  const path = 'documents';
+  try {
+    const q = collection(db, path);
+    const snap = await getDocs(q);
+    let count = 0;
+    const deletePromises = snap.docs.map(async (docSnap) => {
+      await deleteDoc(docSnap.ref);
+      count++;
+    });
+    await Promise.all(deletePromises);
+    return { count };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export async function clearAllReferenceCorpus(): Promise<{ count: number }> {
+  const path = 'reference_documents';
+  try {
+    const q = collection(db, path);
+    const snap = await getDocs(q);
+    let count = 0;
+    const deletePromises = snap.docs.map(async (docSnap) => {
+      await deleteDoc(docSnap.ref);
+      count++;
+    });
+    await Promise.all(deletePromises);
+    return { count };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export async function clearAllEvaluationAndCotejoRecords(): Promise<{
+  documentsCleared: number;
+  referenceDocsCleared: number;
+}> {
+  const docsRes = await clearAllSavedDocuments();
+  const refRes = await clearAllReferenceCorpus();
+  return {
+    documentsCleared: docsRes.count,
+    referenceDocsCleared: refRes.count
+  };
 }
 
 

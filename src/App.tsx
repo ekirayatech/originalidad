@@ -419,7 +419,7 @@ export default function App() {
           />
 
           {/* Institutional Status Banner */}
-          {activeUser ? (
+          {activeUser && (
             <div className="bg-slate-900 text-white px-4 py-2 text-xs border-b border-slate-800">
               <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center flex-wrap gap-2">
@@ -480,33 +480,6 @@ export default function App() {
                     Certificación Criptográfica SHA-256 Habilitada
                   </span>
                 )}
-              </div>
-            </div>
-          ) : (
-            <div className="bg-slate-900 text-slate-200 px-4 py-2 text-xs border-b border-slate-800">
-              <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Database className="w-4 h-4 text-red-400 shrink-0" />
-                  <span>
-                    <strong>Acceso Institucional Ekirayá:</strong> Ingreso para Estudiantes (<code>@est.cem.edu.co</code>) y Docentes (<code>@cem.edu.co</code>) sin depender de la consola Google del colegio.
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsLoginModalOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded-md shadow-xs transition-all cursor-pointer text-xs"
-                  >
-                    <LogIn className="w-3.5 h-3.5" />
-                    <span>Ingresar (Google o Contraseña)</span>
-                  </button>
-                  <button
-                    onClick={() => setIsUsersModalOpen(true)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-md border border-slate-700 transition-all cursor-pointer text-xs"
-                  >
-                    <Users className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Subir Usuarios CSV</span>
-                  </button>
-                </div>
               </div>
             </div>
           )}
