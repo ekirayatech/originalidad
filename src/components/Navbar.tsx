@@ -68,6 +68,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const activeUser = user || institutionalUser;
 
+  const effectiveEmail = (user?.email || institutionalUser?.email || '').toLowerCase().trim();
+  const isSuperEmail = effectiveEmail === 'mebolanos@cem.edu.co';
+
+  const effectiveDisplayName = isSuperEmail
+    ? 'Mauricio Bolaños (Superadministrador CEM)'
+    : userProfile?.displayName || institutionalUser?.displayName || user?.displayName || 'Usuario Ekirayá';
+
+  const effectiveFirstName = isSuperEmail
+    ? 'Mauricio'
+    : (userProfile?.displayName?.split(' ')[0] || institutionalUser?.nombre || user?.displayName?.split(' ')[0] || 'Usuario');
+
   // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -283,7 +294,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   )}
                   <div className="hidden sm:flex flex-col text-left leading-tight">
                     <span className="max-w-[100px] md:max-w-[120px] truncate text-white font-semibold text-xs">
-                      {userProfile?.displayName?.split(' ')[0] || institutionalUser?.nombre || 'Usuario'}
+                      {effectiveFirstName}
                     </span>
                     <span
                       className={`text-[9px] font-bold uppercase tracking-wider ${
@@ -333,7 +344,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </span>
                       </div>
                       <p className="font-bold text-xs text-slate-900 truncate">
-                        {userProfile?.displayName || institutionalUser?.displayName || 'Usuario Ekirayá'}
+                        {effectiveDisplayName}
                       </p>
                       <p className="text-[11px] text-slate-500 font-mono truncate">
                         {user?.email || institutionalUser?.email}

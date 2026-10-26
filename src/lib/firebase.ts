@@ -267,13 +267,21 @@ export async function syncUserProfile(user: FirebaseUser): Promise<UserProfile> 
 
   const roleInfo = determineUserRoleAndInstitution(user.email);
 
+  const cleanEmail = user.email?.toLowerCase().trim() || '';
+  const isSuperAdmin = cleanEmail === 'mebolanos@cem.edu.co';
+  const defaultSuperName = 'Mauricio Bolaños (Superadministrador CEM)';
+
   try {
     const existingDoc = await getDoc(userRef);
     if (!existingDoc.exists()) {
+      const initialDisplayName = isSuperAdmin
+        ? defaultSuperName
+        : user.displayName || user.email?.split('@')[0] || (roleInfo.isStudent ? 'Estudiante CEM' : 'Docente CEM');
+
       const newProfile: UserProfile = {
         uid: user.uid,
         email: user.email || 'sin-correo@cem.edu.co',
-        displayName: user.displayName || user.email?.split('@')[0] || (roleInfo.isStudent ? 'Estudiante CEM' : 'Docente CEM'),
+        displayName: initialDisplayName,
         photoURL: user.photoURL || '',
         role: roleInfo.role,
         institution: roleInfo.institution,
@@ -284,12 +292,19 @@ export async function syncUserProfile(user: FirebaseUser): Promise<UserProfile> 
       return { ...newProfile, roleLabel: roleInfo.roleLabel };
     } else {
       const existingData = existingDoc.data() as UserProfile;
+      const currentName = existingData.displayName;
+      const computedDisplayName = isSuperAdmin
+        ? currentName && currentName !== 'mebolanos' && !currentName.includes('@')
+          ? currentName
+          : defaultSuperName
+        : user.displayName || existingData.displayName || 'Usuario Ekirayá';
+
       const updatedProfile: UserProfile = {
         ...existingData,
         role: roleInfo.role,
         institution: roleInfo.institution,
         lastLoginAt: now,
-        displayName: user.displayName || existingData.displayName,
+        displayName: computedDisplayName,
         photoURL: user.photoURL || existingData.photoURL || ''
       };
       await setDoc(userRef, updatedProfile, { merge: true });
