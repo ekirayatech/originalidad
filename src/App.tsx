@@ -13,6 +13,7 @@ import { UploadDocumentModal } from './components/UploadDocumentModal';
 import { DocumentRecordsModal } from './components/DocumentRecordsModal';
 import { AdminManagementModal } from './components/AdminManagementModal';
 import { AuditVerificationModal } from './components/AuditVerificationModal';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { DEFAULT_CORPUS } from './data/defaultCorpus';
 import { SAMPLE_DOCUMENTS } from './data/sampleDocuments';
 import { EKIRAYA_CONFIG } from './data/ekirayaConfig';
@@ -102,6 +103,7 @@ export default function App() {
   const [isRecordsModalOpen, setIsRecordsModalOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
   // Users count from Firestore
   const [institutionalUsersCount, setInstitutionalUsersCount] = useState<number>(0);
@@ -390,6 +392,7 @@ export default function App() {
         onExportPDF={() => analysis && exportAnalysisToPDF(analysis, content)}
         onExportCSV={() => analysis && exportAnalysisToCSV(analysis)}
         onOpenAuditModal={() => setIsAuditModalOpen(true)}
+        onOpenChangePasswordModal={() => setIsChangePasswordModalOpen(true)}
         isEditorOpen={isEditorOpen}
         usersCount={institutionalUsersCount}
         savedRecordsCount={savedRecordsCount}
@@ -726,6 +729,12 @@ export default function App() {
         analysis={analysis}
         documentText={content}
         onExportPDF={() => analysis && exportAnalysisToPDF(analysis, content)}
+      />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => setIsChangePasswordModalOpen(false)}
       />
     </div>
   );

@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   FileCheck,
-  GraduationCap
+  GraduationCap,
+  KeyRound
 } from 'lucide-react';
 import { AnalysisSummary } from '../types';
 import { EKIRAYA_CONFIG } from '../data/ekirayaConfig';
@@ -32,6 +33,7 @@ interface NavbarProps {
   onOpenRecordsModal: () => void;
   onOpenAdminModal: () => void;
   onOpenLoginModal: () => void;
+  onOpenChangePasswordModal: () => void;
   onExportPDF: () => void;
   onExportCSV: () => void;
   onOpenAuditModal?: () => void;
@@ -50,6 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenRecordsModal,
   onOpenAdminModal,
   onOpenLoginModal,
+  onOpenChangePasswordModal,
   onExportPDF,
   onExportCSV,
   onOpenAuditModal,
@@ -396,6 +399,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                       >
                         <HelpCircle className="w-4 h-4 text-emerald-600 shrink-0" />
                         <span>Normas Ekirayá y Escalas</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onOpenChangePasswordModal();
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer font-medium"
+                      >
+                        <KeyRound className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <span>Cambiar Contraseña</span>
                       </button>
                     </div>
 

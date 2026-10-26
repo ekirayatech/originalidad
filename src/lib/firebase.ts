@@ -877,6 +877,62 @@ export async function deleteInstitutionalUser(userId: string): Promise<void> {
   }
 }
 
+// Password recovery helper for institutional users
+export async function recoverInstitutionalUserPassword(email: string): Promise<{ nombre: string; contrasena: string }> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) {
+    throw new Error('Por favor ingresa un correo institucional.');
+  }
+
+  if (cleanEmail === 'mebolanos@cem.edu.co') {
+    return {
+      nombre: 'Mauricio Bolaños (Superadministrador CEM)',
+      contrasena: '4dm1n3k1**y4'
+    };
+  }
+
+  try {
+    const q = collection(db, 'institutional_users');
+    const snap = await getDocs(q);
+    let foundUser: InstitutionalUser | null = null;
+
+    snap.forEach((docSnap) => {
+      const u = docSnap.data() as InstitutionalUser;
+      if (u.email?.toLowerCase().trim() === cleanEmail) {
+        foundUser = u;
+      }
+    });
+
+    if (!foundUser) {
+      throw new Error(`No se encontró ningún usuario institucional registrado con el correo "${cleanEmail}".`);
+    }
+
+    return {
+      nombre: (foundUser as InstitutionalUser).displayName || (foundUser as InstitutionalUser).nombre,
+      contrasena: (foundUser as InstitutionalUser).contrasena
+    };
+  } catch (err: any) {
+    throw new Error(err?.message || 'Error al recuperar contraseña.');
+  }
+}
+
+// Change password for logged-in institutional user
+export async function updateInstitutionalPassword(userId: string, newPass: string): Promise<void> {
+  const cleanPass = newPass.trim();
+  if (!cleanPass || cleanPass.length < 4) {
+    throw new Error('La nueva contraseña debe tener al menos 4 caracteres.');
+  }
+
+  const path = `institutional_users/${userId}`;
+  try {
+    await updateDoc(doc(db, 'institutional_users', userId), {
+      contrasena: cleanPass
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
 // -------------------------------------------------------------
 // Database Purging Operations ("Borra todos los registros")
 // -------------------------------------------------------------

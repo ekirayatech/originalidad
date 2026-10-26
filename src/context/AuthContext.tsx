@@ -149,6 +149,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      // Special check for superadmin mebolanos@cem.edu.co
+      if (
+        (cleanId === 'mebolanos@cem.edu.co' || cleanId === 'mebolanos') &&
+        cleanPass === '4dm1n3k1**y4'
+      ) {
+        const superAdminUser: InstitutionalUser = {
+          id: 'usr_superadmin_mebolanos',
+          nombre: 'Mauricio',
+          apellido: 'Bolaños',
+          displayName: 'Mauricio Bolaños (Superadministrador CEM)',
+          taller: 'Administración General',
+          contrasena: '4dm1n3k1**y4',
+          rol: 'admin',
+          email: 'mebolanos@cem.edu.co',
+          createdAt: new Date().toISOString(),
+          createdBy: 'Sistema'
+        };
+        setInstitutionalUser(superAdminUser);
+        localStorage.setItem('ekiraya_institutional_session', JSON.stringify(superAdminUser));
+        setUserProfile({
+          uid: superAdminUser.id,
+          email: superAdminUser.email,
+          displayName: superAdminUser.displayName,
+          role: 'admin',
+          roleLabel: 'Superadministrador CEM',
+          institution: 'Colegio Bilingüe Ekirayá - CEM (Administración)'
+        });
+        return superAdminUser;
+      }
+
       // Query institutional_users collection
       const q = collection(db, 'institutional_users');
       const snap = await getDocs(q);
