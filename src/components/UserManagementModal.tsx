@@ -58,6 +58,33 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
   onClose
 }) => {
   const { user, isAdmin } = useAuth();
+
+  if (!isOpen) return null;
+
+  if (!isAdmin) {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-6 text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900">
+            Acceso Restringido
+          </h3>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            El Módulo de Gestión de Usuarios y carga por CSV es exclusivo para administradores y superadministradores del Colegio Bilingüe Ekirayá.
+          </p>
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 px-4 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            Entendido / Cerrar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const [users, setUsers] = useState<InstitutionalUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'list' | 'add' | 'csv'>('list');

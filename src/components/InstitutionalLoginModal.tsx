@@ -377,23 +377,7 @@ export const InstitutionalLoginModal: React.FC<InstitutionalLoginModalProps> = (
                 )}
               </button>
 
-              <div className="text-center pt-2">
-                <p className="text-[11px] text-slate-500">
-                  ¿Aún no tienes contraseña o tu perfil fue cargado en CSV?
-                </p>
-                {onOpenUserManagement && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onOpenUserManagement();
-                    }}
-                    className="text-xs font-semibold text-red-600 hover:text-red-700 mt-1 inline-block cursor-pointer"
-                  >
-                    Abrir Módulo de Gestión de Usuarios
-                  </button>
-                )}
-              </div>
+
             </form>
           ) : (
             <form onSubmit={handleRecoverSubmit} className="space-y-4 py-1">

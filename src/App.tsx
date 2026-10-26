@@ -469,12 +469,14 @@ export default function App() {
                       </>
                     )}
                   </span>
-                  <button
-                    onClick={() => setIsUsersModalOpen(true)}
-                    className="ml-2 text-indigo-400 hover:text-indigo-300 font-semibold underline text-[11px] cursor-pointer"
-                  >
-                    Gestionar Usuarios ({institutionalUsersCount})
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setIsUsersModalOpen(true)}
+                      className="ml-2 text-indigo-400 hover:text-indigo-300 font-semibold underline text-[11px] cursor-pointer"
+                    >
+                      Gestionar Usuarios ({institutionalUsersCount})
+                    </button>
+                  )}
                 </div>
                 {autoIndexMessage ? (
                   <div className="flex items-center gap-1.5 text-emerald-300 font-semibold bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-700/50 animate-in fade-in">

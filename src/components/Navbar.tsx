@@ -342,21 +342,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </div>
 
                     <div className="py-1">
-                      <button
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          onOpenUsersModal();
-                        }}
-                        className="w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer font-medium"
-                      >
-                        <Users className="w-4 h-4 text-indigo-600 shrink-0" />
-                        <span>Gestión de Usuarios</span>
-                        {usersCount > 0 && (
-                          <span className="ml-auto bg-indigo-100 text-indigo-700 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
-                            {usersCount}
-                          </span>
-                        )}
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onOpenUsersModal();
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer font-medium"
+                        >
+                          <Users className="w-4 h-4 text-indigo-600 shrink-0" />
+                          <span>Gestión de Usuarios</span>
+                          {usersCount > 0 && (
+                            <span className="ml-auto bg-indigo-100 text-indigo-700 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                              {usersCount}
+                            </span>
+                          )}
+                        </button>
+                      )}
 
                       <button
                         onClick={() => {
