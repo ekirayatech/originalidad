@@ -179,7 +179,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {analysis && !isEditorOpen && (
             <>
-              {onOpenAuditModal && (
+              {isAdmin && onOpenAuditModal && (
                 <button
                   onClick={onOpenAuditModal}
                   className="flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-950/90 hover:bg-emerald-900 active:scale-95 text-emerald-200 border border-emerald-600 shadow-xs transition-all cursor-pointer"
@@ -202,14 +202,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>PDF</span>
               </button>
 
-              <button
-                onClick={onExportCSV}
-                className="flex items-center gap-1.5 min-h-[40px] px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition-all cursor-pointer"
-                title="Descargar matriz de coincidencias en CSV"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-                <span>CSV</span>
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={onExportCSV}
+                  className="flex items-center gap-1.5 min-h-[40px] px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition-all cursor-pointer"
+                  title="Descargar matriz de coincidencias en CSV"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>CSV</span>
+                </button>
+              )}
             </>
           )}
 

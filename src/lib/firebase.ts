@@ -300,6 +300,18 @@ export async function syncUserProfile(user: FirebaseUser): Promise<UserProfile> 
   }
 }
 
+export async function updateGoogleUserProfile(
+  uid: string,
+  updates: { displayName?: string; nombre?: string; apellido?: string; taller?: string }
+): Promise<void> {
+  const path = `users/${uid}`;
+  try {
+    await updateDoc(doc(db, 'users', uid), updates);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
 // -------------------------------------------------------------
 // Document Evaluation Records (Firestore `/documents/{id}`)
 // -------------------------------------------------------------

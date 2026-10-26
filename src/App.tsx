@@ -115,8 +115,12 @@ export default function App() {
   const [autoIndexMessage, setAutoIndexMessage] = useState<string | null>(null);
   const lastIndexedKeyRef = useRef<string>('');
 
-  // Subscribe to institutional users count
+  // Subscribe to institutional users count (only if admin)
   useEffect(() => {
+    if (!isAdmin) {
+      setInstitutionalUsersCount(0);
+      return;
+    }
     const unsubscribe = subscribeInstitutionalUsers(
       (uList) => {
         setInstitutionalUsersCount(uList.length);
@@ -124,7 +128,7 @@ export default function App() {
       (err) => console.warn('Usuarios en modo seguro:', err)
     );
     return () => unsubscribe();
-  }, []);
+  }, [isAdmin]);
 
   // If a student logs in, default their author name automatically
   useEffect(() => {

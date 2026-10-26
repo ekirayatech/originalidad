@@ -136,8 +136,8 @@ service cloud.firestore {
 
     // INSTITUTIONAL USERS COLLECTION (Docente and Estudiante accounts with Taller, Password & CSV upload)
     match /institutional_users/{userId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow get: if true;
+      allow list: if true;
       allow create: if isSignedIn() && (isAdmin() || isCemTeacher()) && isValidInstitutionalUser(incoming());
       allow update: if isSignedIn() && (isAdmin() || isCemTeacher()) && isValidInstitutionalUser(incoming()) && incoming().id == existing().id;
       allow delete: if isSignedIn() && (isAdmin() || isCemTeacher());
@@ -145,8 +145,8 @@ service cloud.firestore {
 
     // ADMINS COLLECTION
     match /admins/{adminId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow get: if true;
+      allow list: if true;
       allow create: if isSignedIn() && isAdmin() && isValidAdminUser(incoming());
       allow update: if isSignedIn() && isAdmin() && isValidAdminUser(incoming());
       allow delete: if isSignedIn() && isAdmin() && adminId != 'mebolanos@cem.edu.co';

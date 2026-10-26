@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Lock, KeyRound, CheckCircle2, AlertCircle, RefreshCw, User, School, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { updateInstitutionalUser } from '../lib/firebase';
+import { updateInstitutionalUser, updateGoogleUserProfile } from '../lib/firebase';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -22,7 +22,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const { user, institutionalUser } = useAuth();
+  const { user, institutionalUser, userProfile } = useAuth();
   
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
@@ -39,8 +39,14 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       setNombre(institutionalUser.nombre || '');
       setApellido(institutionalUser.apellido || '');
       setTaller(institutionalUser.taller || TALLER_PRESETS[0]);
+    } else if (userProfile || user) {
+      const currentName = userProfile?.displayName || user?.displayName || '';
+      const parts = currentName.split(' ');
+      setNombre(parts[0] || 'Superadmin');
+      setApellido(parts.slice(1).join(' ') || 'CEM');
+      setTaller('Administración General');
     }
-  }, [institutionalUser, isOpen]);
+  }, [institutionalUser, userProfile, user, isOpen]);
 
   if (!isOpen) return null;
 
@@ -51,18 +57,6 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (isGoogleUser) {
-      setErrorMessage(
-        'Tu cuenta está vinculada a Google OAuth. No requieres modificar perfil institucional local.'
-      );
-      return;
-    }
-
-    if (!institutionalUser?.id) {
-      setErrorMessage('No hay una sesión institucional activa para editar perfil.');
-      return;
-    }
-
     const cleanNombre = nombre.trim();
     const cleanApellido = apellido.trim();
     const cleanTaller = taller.trim();
@@ -72,44 +66,54 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       return;
     }
 
-    let passUpdate: { contrasena?: string } = {};
-    if (newPassword.trim()) {
-      if (newPassword.trim().length < 4) {
-        setErrorMessage('La nueva contraseña debe tener al menos 4 caracteres.');
-        return;
-      }
-      if (newPassword !== confirmPassword) {
-        setErrorMessage('Las contraseñas no coinciden.');
-        return;
-      }
-      passUpdate.contrasena = newPassword.trim();
-    }
-
     setIsSubmitting(true);
     try {
-      await updateInstitutionalUser(institutionalUser.id, {
-        nombre: cleanNombre,
-        apellido: cleanApellido,
-        displayName: `${cleanNombre} ${cleanApellido}`,
-        taller: cleanTaller,
-        ...passUpdate
-      });
-
-      // Update local storage session cache if present
-      try {
-        const saved = localStorage.getItem('ekiraya_institutional_session');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          parsed.nombre = cleanNombre;
-          parsed.apellido = cleanApellido;
-          parsed.displayName = `${cleanNombre} ${cleanApellido}`;
-          parsed.taller = cleanTaller;
-          if (passUpdate.contrasena) parsed.contrasena = passUpdate.contrasena;
-          localStorage.setItem('ekiraya_institutional_session', JSON.stringify(parsed));
+      if (institutionalUser?.id) {
+        let passUpdate: { contrasena?: string } = {};
+        if (newPassword.trim()) {
+          if (newPassword.trim().length < 4) {
+            setErrorMessage('La nueva contraseña debe tener al menos 4 caracteres.');
+            setIsSubmitting(false);
+            return;
+          }
+          if (newPassword !== confirmPassword) {
+            setErrorMessage('Las contraseñas no coinciden.');
+            setIsSubmitting(false);
+            return;
+          }
+          passUpdate.contrasena = newPassword.trim();
         }
-      } catch {}
 
-      setSuccessMessage('✓ Perfil y credenciales actualizados con éxito.');
+        await updateInstitutionalUser(institutionalUser.id, {
+          nombre: cleanNombre,
+          apellido: cleanApellido,
+          displayName: `${cleanNombre} ${cleanApellido}`,
+          taller: cleanTaller,
+          ...passUpdate
+        });
+
+        try {
+          const saved = localStorage.getItem('ekiraya_institutional_session');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            parsed.nombre = cleanNombre;
+            parsed.apellido = cleanApellido;
+            parsed.displayName = `${cleanNombre} ${cleanApellido}`;
+            parsed.taller = cleanTaller;
+            if (passUpdate.contrasena) parsed.contrasena = passUpdate.contrasena;
+            localStorage.setItem('ekiraya_institutional_session', JSON.stringify(parsed));
+          }
+        } catch {}
+      } else if (user?.uid) {
+        await updateGoogleUserProfile(user.uid, {
+          nombre: cleanNombre,
+          apellido: cleanApellido,
+          displayName: `${cleanNombre} ${cleanApellido}`,
+          taller: cleanTaller
+        });
+      }
+
+      setSuccessMessage('✓ Perfil actualizado con éxito en la base de datos.');
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => {
@@ -151,89 +155,79 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
         {/* Content */}
         <div className="p-5 space-y-4">
-          {isGoogleUser ? (
-            <div className="p-4 bg-sky-50 border border-sky-200 rounded-xl text-xs text-sky-950 space-y-2">
-              <div className="flex items-center gap-2 font-bold text-sky-900">
-                <ShieldCheck className="w-4 h-4 text-sky-600" />
-                <span>Autenticación mediante Google</span>
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            {errorMessage && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
               </div>
-              <p>
-                Estás conectado con una cuenta de Google institucional (<strong>{user?.email}</strong>). La gestión de tu perfil y credenciales se administra a través de tu cuenta de Google.
-              </p>
+            )}
+
+            {successMessage && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="font-semibold">{successMessage}</span>
+              </div>
+            )}
+
+            {/* Read-only Email */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Correo Institucional (No modificable)
+              </label>
+              <input
+                type="email"
+                disabled
+                value={institutionalUser?.email || user?.email || ''}
+                className="w-full px-3 py-2 text-xs bg-slate-100 text-slate-500 border border-slate-300 rounded-lg cursor-not-allowed font-mono"
+              />
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-3.5">
-              {errorMessage && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
 
-              {successMessage && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="font-semibold">{successMessage}</span>
-                </div>
-              )}
-
-              {/* Read-only Email */}
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Correo Institucional (No modificable)
+                  Nombre
                 </label>
                 <input
-                  type="email"
-                  disabled
-                  value={institutionalUser?.email || ''}
-                  className="w-full px-3 py-2 text-xs bg-slate-100 text-slate-500 border border-slate-300 rounded-lg cursor-not-allowed font-mono"
+                  type="text"
+                  required
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  placeholder="Tu nombre"
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
                 />
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Nombre
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
-                    placeholder="Tu nombre"
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Apellido
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={apellido}
-                    onChange={(e) => setApellido(e.target.value)}
-                    placeholder="Tu apellido"
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
-                  />
-                </div>
-              </div>
-
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Taller o Curso Institucional
+                  Apellido
                 </label>
-                <select
-                  value={taller}
-                  onChange={(e) => setTaller(e.target.value)}
+                <input
+                  type="text"
+                  required
+                  value={apellido}
+                  onChange={(e) => setApellido(e.target.value)}
+                  placeholder="Tu apellido"
                   className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
-                >
-                  {TALLER_PRESETS.map((t, idx) => (
-                    <option key={idx} value={t}>{t}</option>
-                  ))}
-                </select>
+                />
               </div>
+            </div>
 
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Taller o Curso Institucional
+              </label>
+              <select
+                value={taller}
+                onChange={(e) => setTaller(e.target.value)}
+                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
+              >
+                {TALLER_PRESETS.map((t, idx) => (
+                  <option key={idx} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+
+            {!isGoogleUser && (
               <div className="border-t border-slate-200 pt-3 mt-2">
                 <p className="text-[11px] font-bold text-slate-700 mb-2">Cambiar Contraseña (Opcional)</p>
                 <div className="grid grid-cols-2 gap-3">
@@ -259,26 +253,26 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                   </div>
                 </div>
               </div>
+            )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 mt-3"
-              >
-                {isSubmitting ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Guardando Cambios...</span>
-                  </>
-                ) : (
-                  <>
-                    <User className="w-4 h-4" />
-                    <span>Guardar Cambios del Perfil</span>
-                  </>
-                )}
-              </button>
-            </form>
-          )}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 mt-3"
+            >
+              {isSubmitting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Guardando Cambios...</span>
+                </>
+              ) : (
+                <>
+                  <User className="w-4 h-4" />
+                  <span>Guardar Cambios del Perfil</span>
+                </>
+              )}
+            </button>
+          </form>
         </div>
 
         {/* Footer */}
