@@ -39,7 +39,7 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
   onClose,
   onSelectDocumentSnippet
 }) => {
-  const { user, userProfile, isAdmin } = useAuth();
+  const { user, userProfile, institutionalUser, isAdmin } = useAuth();
   const [documents, setDocuments] = useState<SavedDocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,30 +51,31 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const isTeacher = userProfile?.role === 'teacher';
+  const activeUid = user?.uid || institutionalUser?.id || 'guest';
+  const isTeacher = isAdmin || userProfile?.role === 'teacher' || institutionalUser?.rol === 'docente' || institutionalUser?.rol === 'admin';
 
   useEffect(() => {
-    if (!isOpen || !user) {
+    if (!isOpen || (!user && !institutionalUser)) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
     const unsubscribe = subscribeUserOrSchoolDocuments(
-      user.uid,
+      activeUid,
       isTeacher,
       (docs) => {
         setDocuments(docs);
         setLoading(false);
       },
       (err) => {
-        console.error('Error al escuchar documentos:', err);
+        console.error('Error al escuchar documentos en tiempo real:', err);
         setLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [isOpen, user, isTeacher]);
+  }, [isOpen, user, institutionalUser, activeUid, isTeacher]);
 
   if (!isOpen) return null;
 

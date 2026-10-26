@@ -152,10 +152,10 @@ export default function App() {
     }
 
     const currentUid = user?.uid || institutionalUser?.id || 'guest';
-    const isTeacher = userProfile?.role === 'teacher' || institutionalUser?.rol === 'docente';
+    const isTeacherOrAdmin = isAdmin || userProfile?.role === 'teacher' || institutionalUser?.rol === 'docente' || institutionalUser?.rol === 'admin';
     const unsubscribe = subscribeUserOrSchoolDocuments(
       currentUid,
-      isTeacher,
+      isTeacherOrAdmin,
       (docs) => {
         setSavedRecordsCount(docs.length);
       },
