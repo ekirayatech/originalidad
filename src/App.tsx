@@ -10,6 +10,7 @@ import { CustomCorpusModal } from './components/CustomCorpusModal';
 import { CommunityGuidanceModal } from './components/CommunityGuidanceModal';
 import { UploadDocumentModal } from './components/UploadDocumentModal';
 import { DocumentRecordsModal } from './components/DocumentRecordsModal';
+import { AdminManagementModal } from './components/AdminManagementModal';
 import { DEFAULT_CORPUS } from './data/defaultCorpus';
 import { SAMPLE_DOCUMENTS } from './data/sampleDocuments';
 import { EKIRAYA_CONFIG } from './data/ekirayaConfig';
@@ -43,7 +44,7 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const { user, userProfile, login } = useAuth();
+  const { user, userProfile, isAdmin, login } = useAuth();
 
   // Corpus state (default + custom stored in localStorage + Firebase cloud sync)
   const [corpus, setCorpus] = useState<ReferenceDocument[]>(() => {
@@ -89,6 +90,7 @@ export default function App() {
   const [isCorpusModalOpen, setIsCorpusModalOpen] = useState(false);
   const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
   const [isRecordsModalOpen, setIsRecordsModalOpen] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   // Firebase records state
   const [savedRecordsCount, setSavedRecordsCount] = useState<number>(0);
@@ -127,29 +129,35 @@ export default function App() {
     return () => unsubscribe();
   }, [user, userProfile]);
 
-  // Sync reference corpus with Firebase Firestore when logged in
+  // Sync reference corpus with Firebase Firestore - ONLY when logged in as ADMIN
+  // "solo el admin puede ver la biblioteca de cotejo"
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isAdmin) return;
 
-    const unsubscribe = subscribeReferenceDocuments((cloudDocs) => {
-      if (cloudDocs.length === 0) return;
+    const unsubscribe = subscribeReferenceDocuments(
+      (cloudDocs) => {
+        if (cloudDocs.length === 0) return;
 
-      setCorpus((prev) => {
-        const merged = [...prev];
-        for (const cDoc of cloudDocs) {
-          const index = merged.findIndex((d) => d.id === cDoc.id);
-          if (index >= 0) {
-            merged[index] = cDoc;
-          } else {
-            merged.push(cDoc);
+        setCorpus((prev) => {
+          const merged = [...prev];
+          for (const cDoc of cloudDocs) {
+            const index = merged.findIndex((d) => d.id === cDoc.id);
+            if (index >= 0) {
+              merged[index] = cDoc;
+            } else {
+              merged.push(cDoc);
+            }
           }
-        }
-        return merged;
-      });
-    });
+          return merged;
+        });
+      },
+      (err) => {
+        console.warn('Acceso restringido a biblioteca de cotejo:', err?.message || err);
+      }
+    );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, isAdmin]);
 
   // Run analysis in browser memory (memoized on content, title, author, corpus, filters)
   const analysis = useMemo(() => {
@@ -342,10 +350,17 @@ export default function App() {
         analysis={analysis}
         onNewDocument={() => setIsEditorOpen(!isEditorOpen)}
         onOpenUploadModal={() => setIsUploadModalOpen(true)}
-        onOpenCorpusModal={() => setIsCorpusModalOpen(true)}
+        onOpenCorpusModal={() => {
+          if (isAdmin) {
+            setIsCorpusModalOpen(true);
+          } else {
+            alert('Acceso restringido: únicamente los administradores pueden ver la biblioteca de cotejo.');
+          }
+        }}
         onOpenLegalModal={() => setIsLegalModalOpen(true)}
         onOpenCommunityModal={() => setIsCommunityModalOpen(true)}
         onOpenRecordsModal={() => setIsRecordsModalOpen(true)}
+        onOpenAdminModal={() => setIsAdminModalOpen(true)}
         onExportPDF={() => analysis && exportAnalysisToPDF(analysis, content)}
         onExportCSV={() => analysis && exportAnalysisToCSV(analysis)}
         isEditorOpen={isEditorOpen}
@@ -391,12 +406,23 @@ export default function App() {
                   </span>
                   <span
                     className={`inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded-full text-[11px] ${
-                      userProfile?.role === 'student'
+                      isAdmin
+                        ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 shadow-xs'
+                        : userProfile?.role === 'student'
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                        : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
                     }`}
                   >
-                    {userProfile?.role === 'student' ? (
+                    {isAdmin ? (
+                      <>
+                        <ShieldCheck className="w-3 h-3 text-amber-400" />
+                        <span>
+                          {user.email?.toLowerCase() === 'mebolanos@cem.edu.co'
+                            ? `Superadmin: ${user.email}`
+                            : `Admin: ${user.email}`}
+                        </span>
+                      </>
+                    ) : userProfile?.role === 'student' ? (
                       <>
                         <GraduationCap className="w-3 h-3" />
                         <span>Estudiante CEM: {user.email}</span>
@@ -618,6 +644,12 @@ export default function App() {
         isOpen={isRecordsModalOpen}
         onClose={() => setIsRecordsModalOpen(false)}
         onSelectDocumentSnippet={handleSelectSnippetFromHistory}
+      />
+
+      {/* Admin Users & Permissions Management Modal */}
+      <AdminManagementModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
       />
     </div>
   );

@@ -41,7 +41,7 @@
     },
     "ReferenceCorpusDocument": {
       "title": "ReferenceCorpusDocument",
-      "description": "Documento almacenado en la biblioteca de cotejo compartida para comparaciones",
+      "description": "Documento almacenado en la biblioteca de cotejo compartida para comparaciones (acceso restringido a administradores)",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
@@ -57,6 +57,20 @@
         "createdAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "title", "author", "content", "createdBy"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Usuario con privilegios de administrador del sistema de verificación y biblioteca de cotejo",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["admin", "superadmin"], "maxLength": 32 },
+        "addedBy": { "type": "string", "maxLength": 128 },
+        "addedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "email", "role"]
     }
   },
   "firestore": {
@@ -70,7 +84,11 @@
     },
     "/reference_documents/{referenceDocId}": {
       "schema": "ReferenceCorpusDocument",
-      "description": "Biblioteca centralizada de documentos de cotejo y entregas previas para contrastar"
+      "description": "Biblioteca centralizada de documentos de cotejo (solo accesible y visible para administradores)"
+    },
+    "/admins/{adminId}": {
+      "schema": "AdminUser",
+      "description": "Registro de usuarios administradores con privilegios de gestión de cotejo"
     }
   }
 }

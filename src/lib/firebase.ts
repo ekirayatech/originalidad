@@ -108,12 +108,18 @@ export interface UserProfile {
 }
 
 // Helper to determine role & institution from school email
-export function determineUserRoleAndInstitution(email?: string | null): {
+export const SUPERADMIN_EMAILS = ['mebolanos@cem.edu.co'];
+
+export function determineUserRoleAndInstitution(
+  email?: string | null,
+  knownAdmins?: string[]
+): {
   role: UserRole;
   institution: string;
   roleLabel: string;
   isStudent: boolean;
   isTeacher: boolean;
+  isAdmin: boolean;
 } {
   if (!email) {
     return {
@@ -121,13 +127,30 @@ export function determineUserRoleAndInstitution(email?: string | null): {
       institution: 'Colegio Ekirayá - CEM',
       roleLabel: 'Usuario Invitado',
       isStudent: false,
-      isTeacher: false
+      isTeacher: false,
+      isAdmin: false
     };
   }
 
   const cleanEmail = email.trim().toLowerCase();
 
-  // Student institutional domains: @est.cem.edu.co or typo with comma @est,cem.edu.co
+  // 1. Super-admin check (mebolanos@cem.edu.co) or registered admin
+  if (
+    SUPERADMIN_EMAILS.includes(cleanEmail) ||
+    (knownAdmins && knownAdmins.includes(cleanEmail))
+  ) {
+    const isSuper = SUPERADMIN_EMAILS.includes(cleanEmail);
+    return {
+      role: 'admin',
+      institution: 'Colegio Bilingüe Ekirayá - CEM (Administración)',
+      roleLabel: isSuper ? 'Superadministrador CEM' : 'Administrador CEM',
+      isStudent: false,
+      isTeacher: true,
+      isAdmin: true
+    };
+  }
+
+  // 2. Student institutional domains: @est.cem.edu.co or typo with comma @est,cem.edu.co
   if (
     cleanEmail.endsWith('@est.cem.edu.co') ||
     cleanEmail.includes('@est.cem.edu.co') ||
@@ -139,11 +162,12 @@ export function determineUserRoleAndInstitution(email?: string | null): {
       institution: 'Colegio Ekirayá - CEM (Estudiantes)',
       roleLabel: 'Estudiante CEM',
       isStudent: true,
-      isTeacher: false
+      isTeacher: false,
+      isAdmin: false
     };
   }
 
-  // Teacher institutional domains: @cem.edu.co or @ekiraya.edu.co
+  // 3. Teacher institutional domains: @cem.edu.co or @ekiraya.edu.co
   if (
     cleanEmail.endsWith('@cem.edu.co') ||
     cleanEmail.includes('@cem.edu.co') ||
@@ -154,7 +178,8 @@ export function determineUserRoleAndInstitution(email?: string | null): {
       institution: 'Colegio Ekirayá - CEM (Docentes)',
       roleLabel: 'Docente CEM',
       isStudent: false,
-      isTeacher: true
+      isTeacher: true,
+      isAdmin: false
     };
   }
 
@@ -164,7 +189,8 @@ export function determineUserRoleAndInstitution(email?: string | null): {
     institution: 'Colegio Ekirayá - CEM (Acceso Institucional)',
     roleLabel: 'Docente CEM (Externo)',
     isStudent: false,
-    isTeacher: true
+    isTeacher: true,
+    isAdmin: false
   };
 }
 
@@ -520,5 +546,121 @@ export function subscribeUserOrSchoolDocuments(
       }
     }
   );
+}
+
+// -------------------------------------------------------------
+// Administrator Management (Firestore `/admins/{adminId}`)
+// "solo el admin puede ver la biblioteca de cotejo. También debo poder agregar usuarios administradores"
+// -------------------------------------------------------------
+export interface AdminUser {
+  id: string;
+  email: string;
+  displayName?: string;
+  role: 'admin' | 'superadmin';
+  addedBy: string;
+  addedAt: string;
+}
+
+export function subscribeAdmins(
+  onData: (admins: AdminUser[]) => void,
+  onError?: (err: Error) => void
+) {
+  const path = 'admins';
+  const q = collection(db, path);
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: AdminUser[] = [];
+      snapshot.forEach((snap) => {
+        list.push(snap.data() as AdminUser);
+      });
+
+      // Always ensure superadmin mebolanos@cem.edu.co is recognized
+      const hasSuper = list.some((a) => a.email.toLowerCase() === 'mebolanos@cem.edu.co');
+      if (!hasSuper) {
+        list.unshift({
+          id: 'mebolanos@cem.edu.co',
+          email: 'mebolanos@cem.edu.co',
+          displayName: 'Superadministrador CEM (mebolanos@cem.edu.co)',
+          role: 'superadmin',
+          addedBy: 'Sistema Ekirayá',
+          addedAt: '2026-01-01T00:00:00.000Z'
+        });
+      }
+
+      // Sort: superadmins first, then newest
+      list.sort((a, b) => {
+        if (a.role === 'superadmin') return -1;
+        if (b.role === 'superadmin') return 1;
+        return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+      });
+
+      onData(list);
+    },
+    (error) => {
+      if (onError) {
+        try {
+          handleFirestoreError(error, OperationType.LIST, path);
+        } catch (e: any) {
+          onError(e);
+        }
+      } else {
+        handleFirestoreError(error, OperationType.LIST, path);
+      }
+    }
+  );
+}
+
+export async function addAdminUser(
+  email: string,
+  displayName?: string
+): Promise<AdminUser> {
+  if (!auth.currentUser) {
+    throw new Error('Debes iniciar sesión como administrador para agregar nuevos administradores.');
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    throw new Error('Por favor ingresa un correo electrónico institucional válido.');
+  }
+
+  const adminId = cleanEmail;
+  const path = `admins/${adminId}`;
+  const now = new Date().toISOString();
+
+  const adminRecord: AdminUser = {
+    id: adminId,
+    email: cleanEmail,
+    displayName: displayName?.trim() || cleanEmail.split('@')[0],
+    role: 'admin',
+    addedBy: auth.currentUser.email || auth.currentUser.uid,
+    addedAt: now
+  };
+
+  try {
+    await setDoc(doc(db, 'admins', adminId), adminRecord);
+    return adminRecord;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+export async function removeAdminUser(adminId: string): Promise<void> {
+  if (!auth.currentUser) {
+    throw new Error('Debes iniciar sesión para realizar esta acción.');
+  }
+
+  const cleanId = adminId.trim().toLowerCase();
+  if (cleanId === 'mebolanos@cem.edu.co') {
+    throw new Error('No es posible remover al superadministrador principal.');
+  }
+
+  const path = `admins/${cleanId}`;
+  try {
+    await deleteDoc(doc(db, 'admins', cleanId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
 }
 

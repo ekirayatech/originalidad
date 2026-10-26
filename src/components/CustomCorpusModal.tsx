@@ -18,6 +18,7 @@ import {
   Check
 } from 'lucide-react';
 import { extractTextFromFile } from '../utils/documentParser';
+import { useAuth } from '../context/AuthContext';
 
 interface CustomCorpusModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export const CustomCorpusModal: React.FC<CustomCorpusModalProps> = ({
   onAddDocument,
   onDeleteDocument
 }) => {
+  const { isAdmin } = useAuth();
   const [isAdding, setIsAdding] = useState(false);
   const [addMode, setAddMode] = useState<'upload' | 'manual'>('upload');
   const [isUploading, setIsUploading] = useState(false);
@@ -58,6 +60,31 @@ export const CustomCorpusModal: React.FC<CustomCorpusModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
+
+  // Strict check: Only administrators can view the comparison library
+  if (!isAdmin) {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 p-6 text-center animate-in fade-in zoom-in-95">
+          <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900 mb-1">
+            Acceso Exclusivo para Administradores
+          </h3>
+          <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+            Por disposición institucional del Colegio Bilingüe Ekirayá, únicamente los usuarios administradores pueden consultar y gestionar la Biblioteca Central de Cotejo.
+          </p>
+          <button
+            onClick={onClose}
+            className="w-full py-2 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer"
+          >
+            Entendido
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleFilesProcess = async (files: FileList | File[]) => {
     const fileArray = Array.from(files);

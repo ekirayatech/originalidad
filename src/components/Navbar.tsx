@@ -9,6 +9,7 @@ import {
   Users,
   HelpCircle,
   ShieldCheck,
+  ShieldAlert,
   UploadCloud,
   Cloud,
   User,
@@ -28,6 +29,7 @@ interface NavbarProps {
   onOpenLegalModal: () => void;
   onOpenCommunityModal: () => void;
   onOpenRecordsModal: () => void;
+  onOpenAdminModal: () => void;
   onExportPDF: () => void;
   onExportCSV: () => void;
   isEditorOpen: boolean;
@@ -44,6 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenLegalModal,
   onOpenCommunityModal,
   onOpenRecordsModal,
+  onOpenAdminModal,
   onExportPDF,
   onExportCSV,
   isEditorOpen,
@@ -51,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   customCorpusCount = 0,
   savedRecordsCount = 0
 }) => {
-  const { user, userProfile, login, logout, loading: authLoading } = useAuth();
+  const { user, userProfile, isAdmin, adminsList, login, logout, loading: authLoading } = useAuth();
   const [logoFailed, setLogoFailed] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -73,17 +76,17 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Logo and Brand */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Logo container */}
-          <div className="bg-white px-2 py-1 rounded-xl flex items-center justify-center shadow-xs shrink-0 h-10 sm:h-11 min-w-[40px] sm:min-w-[48px]">
+          <div className="bg-white p-1 rounded-xl flex items-center justify-center shadow-md ring-1 ring-white/20 shrink-0 h-10 sm:h-12 w-auto max-w-[140px] px-2 overflow-hidden">
             {!logoFailed ? (
               <img
                 src={EKIRAYA_CONFIG.logoUrl}
-                alt="Colegio Bilingüe Ekirayá"
-                className="h-7 sm:h-9 w-auto object-contain max-w-[90px] sm:max-w-[130px]"
+                alt="Logo Institucional Colegio Bilingüe Ekirayá"
+                className="h-full w-auto max-h-8 sm:max-h-10 object-contain hover:scale-105 transition-transform duration-200"
                 referrerPolicy="no-referrer"
                 onError={() => setLogoFailed(true)}
               />
             ) : (
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-600 flex items-center justify-center font-black text-white text-base sm:text-lg">
+              <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center font-black text-amber-400 text-base sm:text-lg">
                 E
               </div>
             )}
@@ -117,25 +120,45 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="xs:hidden sm:hidden">Subir</span>
           </button>
 
-          {/* Reference Corpus Modal Button */}
-          <button
-            onClick={onOpenCorpusModal}
-            className="flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-sky-950/80 hover:bg-sky-900 active:scale-95 text-sky-200 border border-sky-700 shadow-xs transition-all cursor-pointer"
-            title="Biblioteca de Cotejo y Entregas Anteriores: Gestionar documentos para comparar"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-            <span className="hidden sm:inline">Biblioteca Cotejo</span>
-            <span className="sm:hidden">Cotejo</span>
-            {customCorpusCount > 0 ? (
-              <span className="bg-sky-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
-                {customCorpusCount}
-              </span>
-            ) : corpusCount > 0 ? (
-              <span className="bg-slate-700 text-slate-300 text-[10px] px-1.5 py-0.2 rounded-full hidden md:inline">
-                {corpusCount}
-              </span>
-            ) : null}
-          </button>
+          {/* Reference Corpus Modal Button - ONLY visible to Administrators */}
+          {isAdmin && (
+            <button
+              onClick={onOpenCorpusModal}
+              className="flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-sky-950/80 hover:bg-sky-900 active:scale-95 text-sky-200 border border-sky-700 shadow-xs transition-all cursor-pointer"
+              title="Biblioteca de Cotejo Central (Exclusivo Administradores)"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              <span className="hidden sm:inline">Biblioteca Cotejo</span>
+              <span className="sm:hidden">Cotejo</span>
+              {customCorpusCount > 0 ? (
+                <span className="bg-sky-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
+                  {customCorpusCount}
+                </span>
+              ) : corpusCount > 0 ? (
+                <span className="bg-slate-700 text-slate-300 text-[10px] px-1.5 py-0.2 rounded-full hidden md:inline">
+                  {corpusCount}
+                </span>
+              ) : null}
+            </button>
+          )}
+
+          {/* Admin Management Button - ONLY visible to Administrators */}
+          {isAdmin && (
+            <button
+              onClick={onOpenAdminModal}
+              className="flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-950/80 hover:bg-amber-900 active:scale-95 text-amber-200 border border-amber-700 shadow-xs transition-all cursor-pointer"
+              title="Gestión de Administradores y Permisos Ekirayá"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="hidden sm:inline">Administración</span>
+              <span className="sm:hidden">Admin</span>
+              {adminsList.length > 0 && (
+                <span className="bg-amber-500 text-slate-950 text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
+                  {adminsList.length}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Firebase Saved Records Button (if user is authenticated) */}
           {user && (
@@ -202,11 +225,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className={`flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] p-1 sm:px-2.5 py-1 text-xs font-medium rounded-lg border transition-all cursor-pointer ${
-                    userProfile?.role === 'student'
+                    isAdmin
+                      ? 'bg-amber-950/80 hover:bg-amber-900 border-amber-600 text-amber-200'
+                      : userProfile?.role === 'student'
                       ? 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-700 text-emerald-200'
                       : 'bg-indigo-950/80 hover:bg-indigo-900 border-indigo-700 text-indigo-200'
                   }`}
-                  title={`${user.email} (${userProfile?.roleLabel || (userProfile?.role === 'student' ? 'Estudiante CEM' : 'Docente CEM')})`}
+                  title={`${user.email} (${isAdmin ? 'Administrador' : userProfile?.roleLabel || 'Docente CEM'})`}
                 >
                   {user.photoURL ? (
                     <img
@@ -217,7 +242,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   ) : (
                     <div
                       className={`w-7 h-7 rounded-full text-white font-bold flex items-center justify-center text-xs shrink-0 ${
-                        userProfile?.role === 'student' ? 'bg-emerald-600' : 'bg-indigo-600'
+                        isAdmin
+                          ? 'bg-amber-600'
+                          : userProfile?.role === 'student'
+                          ? 'bg-emerald-600'
+                          : 'bg-indigo-600'
                       }`}
                     >
                       {(user.displayName || user.email || 'U')[0].toUpperCase()}
@@ -225,14 +254,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                   )}
                   <div className="hidden md:flex flex-col text-left leading-tight">
                     <span className="max-w-[110px] truncate text-white font-semibold text-xs">
-                      {user.displayName?.split(' ')[0] || (userProfile?.role === 'student' ? 'Estudiante' : 'Docente')}
+                      {user.displayName?.split(' ')[0] || (isAdmin ? 'Admin' : userProfile?.role === 'student' ? 'Estudiante' : 'Docente')}
                     </span>
                     <span
                       className={`text-[9px] font-bold uppercase tracking-wider ${
-                        userProfile?.role === 'student' ? 'text-emerald-400' : 'text-indigo-400'
+                        isAdmin
+                          ? 'text-amber-400'
+                          : userProfile?.role === 'student'
+                          ? 'text-emerald-400'
+                          : 'text-indigo-400'
                       }`}
                     >
-                      {userProfile?.roleLabel || (userProfile?.role === 'student' ? 'Estudiante CEM' : 'Docente CEM')}
+                      {isAdmin
+                        ? user?.email?.toLowerCase() === 'mebolanos@cem.edu.co'
+                          ? 'Superadmin'
+                          : 'Admin CEM'
+                        : userProfile?.roleLabel || 'Docente CEM'}
                     </span>
                   </div>
                   <ChevronDown className="w-3 h-3 text-slate-400 ml-0.5" />
@@ -245,19 +282,25 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <div className="flex items-center justify-between mb-1">
                         <span
                           className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
-                            userProfile?.role === 'student'
+                            isAdmin
+                              ? 'bg-amber-50 text-amber-800 border-amber-300'
+                              : userProfile?.role === 'student'
                               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                               : 'bg-indigo-50 text-indigo-800 border-indigo-200'
                           }`}
                         >
-                          {userProfile?.roleLabel || (userProfile?.role === 'student' ? 'Estudiante CEM' : 'Docente CEM')}
+                          {isAdmin
+                            ? user?.email?.toLowerCase() === 'mebolanos@cem.edu.co'
+                              ? 'Superadministrador CEM'
+                              : 'Administrador CEM'
+                            : userProfile?.roleLabel || 'Docente CEM'}
                         </span>
                         <span className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Cotejo Activo
                         </span>
                       </div>
                       <p className="font-bold text-xs text-slate-900 truncate">
-                        {user.displayName || (userProfile?.role === 'student' ? 'Estudiante CEM' : 'Docente CEM')}
+                        {user.displayName || (isAdmin ? 'Administrador Ekirayá' : userProfile?.role === 'student' ? 'Estudiante CEM' : 'Docente CEM')}
                       </p>
                       <p className="text-[11px] text-slate-500 font-mono truncate">{user.email}</p>
                       <p className="text-[10px] text-slate-400 mt-1">
@@ -282,19 +325,39 @@ export const Navbar: React.FC<NavbarProps> = ({
                         )}
                       </button>
 
-                      <button
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          onOpenCorpusModal();
-                        }}
-                        className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer font-medium"
-                      >
-                        <BookOpen className="w-4 h-4 text-sky-600 shrink-0" />
-                        <span>Repositorio Central de Cotejo</span>
-                        <span className="ml-auto text-[10px] text-sky-600 font-semibold bg-sky-50 px-1.5 py-0.2 rounded">
-                          {corpusCount} docs
-                        </span>
-                      </button>
+                      {/* Only Admin can see/access the Biblioteca de Cotejo */}
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onOpenCorpusModal();
+                          }}
+                          className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer font-medium"
+                        >
+                          <BookOpen className="w-4 h-4 text-sky-600 shrink-0" />
+                          <span>Biblioteca Central de Cotejo</span>
+                          <span className="ml-auto text-[10px] text-sky-600 font-semibold bg-sky-50 px-1.5 py-0.2 rounded">
+                            {corpusCount} docs
+                          </span>
+                        </button>
+                      )}
+
+                      {/* Admin Management Option */}
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onOpenAdminModal();
+                          }}
+                          className="w-full text-left px-4 py-2 text-xs text-amber-900 hover:bg-amber-50 flex items-center gap-2 cursor-pointer font-medium"
+                        >
+                          <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Gestión de Administradores</span>
+                          <span className="ml-auto text-[10px] text-amber-700 font-semibold bg-amber-100 px-1.5 py-0.2 rounded">
+                            {adminsList.length} admins
+                          </span>
+                        </button>
+                      )}
 
                       <button
                         onClick={() => {
