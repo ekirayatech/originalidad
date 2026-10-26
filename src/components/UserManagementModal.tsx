@@ -544,17 +544,17 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between shrink-0">
-          <div className="flex space-x-2 sm:space-x-4">
+        <div className="bg-slate-50 border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between shrink-0 overflow-x-auto no-scrollbar">
+          <div className="flex space-x-1.5 sm:space-x-4 min-w-max py-0.5">
             <button
               onClick={() => setActiveTab('list')}
-              className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+              className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'list'
                   ? 'border-red-600 text-red-700 bg-white/60'
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Users className="w-4 h-4 text-red-600" />
+              <Users className="w-4 h-4 text-red-600 shrink-0" />
               <span>Directorio de Usuarios</span>
               <span className="bg-slate-200 text-slate-800 text-[11px] font-bold px-2 py-0.2 rounded-full font-mono">
                 {users.length}
@@ -563,25 +563,25 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
 
             <button
               onClick={() => setActiveTab('add')}
-              className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+              className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'add'
                   ? 'border-red-600 text-red-700 bg-white/60'
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              <UserPlus className="w-4 h-4 text-emerald-600" />
+              <UserPlus className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>Agregar Individual</span>
             </button>
 
             <button
               onClick={() => setActiveTab('csv')}
-              className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
+              className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'csv'
                   ? 'border-red-600 text-red-700 bg-white/60'
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              <FileSpreadsheet className="w-4 h-4 text-sky-600" />
+              <FileSpreadsheet className="w-4 h-4 text-sky-600 shrink-0" />
               <span>Carga Masiva con CSV</span>
               <span className="bg-sky-100 text-sky-800 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
                 .csv
@@ -592,7 +592,7 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
           {activeTab === 'list' && users.length > 0 && (
             <button
               onClick={handleExportUsersToCsv}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 shadow-2xs transition-all cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 shadow-2xs transition-all cursor-pointer shrink-0 ml-2"
               title="Descargar respaldo de usuarios en formato CSV"
             >
               <Download className="w-3.5 h-3.5 text-emerald-600" />
@@ -778,7 +778,7 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs border-collapse">
+                    <table className="w-full text-left text-xs border-collapse min-w-[680px]">
                       <thead>
                         <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
                           <th className="py-2.5 px-3">Usuario (Nombre y Apellido)</th>

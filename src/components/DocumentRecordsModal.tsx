@@ -243,11 +243,11 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
 
         {/* Teacher filter tabs (only shown for @cem.edu.co teachers) */}
         {isTeacher && (
-          <div className="px-4 sm:px-6 py-2 bg-slate-100 border-b border-slate-200 flex items-center gap-2 text-xs">
-            <span className="text-slate-500 font-semibold mr-1">Vista Docente:</span>
+          <div className="px-3 sm:px-6 py-2 bg-slate-100 border-b border-slate-200 flex items-center gap-2 text-xs overflow-x-auto no-scrollbar">
+            <span className="text-slate-500 font-semibold mr-1 whitespace-nowrap shrink-0">Vista Docente:</span>
             <button
               onClick={() => setActiveFilter('all')}
-              className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeFilter === 'all'
                   ? 'bg-sky-600 text-white shadow-xs'
                   : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
@@ -257,17 +257,17 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
             </button>
             <button
               onClick={() => setActiveFilter('students')}
-              className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeFilter === 'students'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
               }`}
             >
-              Entregas de Estudiantes (@est.cem.edu.co)
+              Entregas Estudiantes (@est.cem.edu.co)
             </button>
             <button
               onClick={() => setActiveFilter('mine')}
-              className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeFilter === 'mine'
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'

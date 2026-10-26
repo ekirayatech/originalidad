@@ -81,6 +81,9 @@ export default function App() {
   // Active view tab in analysis mode: 'report' | 'ai_diagnostics'
   const [activeTab, setActiveTab] = useState<'report' | 'ai_diagnostics'>('report');
 
+  // Mobile sub-tab for report view on screens < lg ('document' | 'sources')
+  const [mobileReportTab, setMobileReportTab] = useState<'document' | 'sources'>('document');
+
   // Mode: Editor or Report
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
 
@@ -486,18 +489,18 @@ export default function App() {
 
 
           {/* Subheader Tabs */}
-          <div className="bg-white border-b border-slate-200 px-4 sm:px-6">
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
-              <div className="flex items-center space-x-1 sm:space-x-4">
+          <div className="bg-white border-b border-slate-200 px-3 sm:px-6 shadow-2xs">
+            <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+              <div className="flex items-center space-x-1 sm:space-x-4 overflow-x-auto no-scrollbar py-0.5 max-w-full">
                 <button
                   onClick={() => setActiveTab('report')}
-                  className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all ${
+                  className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-all cursor-pointer ${
                     activeTab === 'report'
                       ? 'border-red-600 text-red-600'
                       : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  <FileText className="w-4 h-4" />
+                  <FileText className="w-4 h-4 shrink-0" />
                   <span>Reporte de Similitud y Fuentes</span>
                   <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700 font-mono">
                     {analysis.sources.length}
@@ -506,21 +509,21 @@ export default function App() {
 
                 <button
                   onClick={() => setActiveTab('ai_diagnostics')}
-                  className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all ${
+                  className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-all cursor-pointer ${
                     activeTab === 'ai_diagnostics'
                       ? 'border-purple-600 text-purple-700'
                       : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4 text-purple-600" />
-                  <span>Diagnóstico Detallado de IA</span>
+                  <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                  <span>Diagnóstico de IA</span>
                   <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-800 font-mono font-bold">
                     {analysis.aiWritingIndex}%
                   </span>
                 </button>
               </div>
 
-              <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500">
+              <div className="hidden md:flex items-center gap-2 text-xs text-slate-500 shrink-0">
                 <button
                   onClick={() => setIsUploadModalOpen(true)}
                   className="flex items-center gap-1 px-2.5 py-1 text-red-700 hover:text-red-900 rounded-md hover:bg-red-50 border border-red-200 font-semibold cursor-pointer"
@@ -545,50 +548,90 @@ export default function App() {
             </div>
           </div>
 
+          {/* Mobile sub-tab switcher for Document vs Sources (< lg viewports) */}
+          {activeTab === 'report' && (
+            <div className="lg:hidden bg-slate-100 px-3 py-2 border-b border-slate-200">
+              <div className="grid grid-cols-2 gap-1.5 max-w-sm mx-auto bg-slate-200/80 p-1 rounded-xl">
+                <button
+                  onClick={() => setMobileReportTab('document')}
+                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    mobileReportTab === 'document'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                  <span>Documento</span>
+                </button>
+                <button
+                  onClick={() => setMobileReportTab('sources')}
+                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    mobileReportTab === 'sources'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                  <span>Fuentes ({analysis.sources.length})</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* View Tab 1: Interactive Document Viewer + Sources Sidebar */}
           {activeTab === 'report' ? (
             <div className="flex-1 flex flex-col lg:flex-row min-h-[calc(100vh-190px)]">
-              <ReportViewer
-                analysis={analysis}
-                documentText={content}
-                onSelectSource={(srcId) => setActiveSourceId(srcId)}
-                targetSentenceId={targetSentenceId}
-                onAddToCorpus={() => {
-                  handleAddCorpusDoc({
-                    id: `custom-${analysis.documentId}`,
-                    title: analysis.title,
-                    author: analysis.author,
-                    type: 'student_paper',
-                    year: new Date().getFullYear(),
-                    institutionOrJournal: 'Colegio Bilingüe Ekirayá - Entregas de Estudiantes',
-                    content: content,
-                    isCustomUploaded: true
-                  });
-                }}
-                isAlreadyInCorpus={corpus.some(
-                  (d) =>
-                    d.id === `custom-${analysis.documentId}` ||
-                    (d.title.trim().toLowerCase() === analysis.title.trim().toLowerCase() &&
-                      d.content.trim() === content.trim())
-                )}
-                onSaveToFirebase={handleSaveCurrentToFirebase}
-                isSavedToFirebase={isSavedToFirebase}
-                isSavingToFirebase={isSavingToFirebase}
-                onOpenAuditModal={() => setIsAuditModalOpen(true)}
-              />
-              <SourcesPanel
-                sources={analysis.sources}
-                similarityIndex={analysis.similarityIndex}
-                totalWords={analysis.totalWords}
-                activeSourceId={activeSourceId}
-                onSelectSource={(srcId) => setActiveSourceId(srcId)}
-                filters={filters}
-                onUpdateFilters={handleUpdateFilters}
-              />
+              <div className={`flex-1 min-w-0 ${mobileReportTab === 'sources' ? 'hidden lg:block' : 'block'}`}>
+                <ReportViewer
+                  analysis={analysis}
+                  documentText={content}
+                  onSelectSource={(srcId) => {
+                    setActiveSourceId(srcId);
+                    setMobileReportTab('document');
+                  }}
+                  targetSentenceId={targetSentenceId}
+                  onAddToCorpus={() => {
+                    handleAddCorpusDoc({
+                      id: `custom-${analysis.documentId}`,
+                      title: analysis.title,
+                      author: analysis.author,
+                      type: 'student_paper',
+                      year: new Date().getFullYear(),
+                      institutionOrJournal: 'Colegio Bilingüe Ekirayá - Entregas de Estudiantes',
+                      content: content,
+                      isCustomUploaded: true
+                    });
+                  }}
+                  isAlreadyInCorpus={corpus.some(
+                    (d) =>
+                      d.id === `custom-${analysis.documentId}` ||
+                      (d.title.trim().toLowerCase() === analysis.title.trim().toLowerCase() &&
+                        d.content.trim() === content.trim())
+                  )}
+                  onSaveToFirebase={handleSaveCurrentToFirebase}
+                  isSavedToFirebase={isSavedToFirebase}
+                  isSavingToFirebase={isSavingToFirebase}
+                  onOpenAuditModal={() => setIsAuditModalOpen(true)}
+                />
+              </div>
+              <div className={`w-full lg:w-96 shrink-0 ${mobileReportTab === 'document' ? 'hidden lg:block' : 'block'}`}>
+                <SourcesPanel
+                  sources={analysis.sources}
+                  similarityIndex={analysis.similarityIndex}
+                  totalWords={analysis.totalWords}
+                  activeSourceId={activeSourceId}
+                  onSelectSource={(srcId) => {
+                    setActiveSourceId(srcId);
+                    setMobileReportTab('document');
+                  }}
+                  filters={filters}
+                  onUpdateFilters={handleUpdateFilters}
+                />
+              </div>
             </div>
           ) : (
             /* View Tab 2: AI Writing Diagnostics Panel */
-            <div className="flex-1 p-4 sm:p-6 bg-slate-50">
+            <div className="flex-1 p-3 sm:p-6 bg-slate-50">
               <AIDetectionPanel
                 analysis={analysis}
                 onNavigateToSentence={(sentenceId) => {

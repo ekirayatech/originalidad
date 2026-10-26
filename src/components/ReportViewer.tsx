@@ -321,7 +321,7 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
       )}
 
       {/* Main Document Paper Sheet */}
-      <div className="max-w-4xl mx-auto bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-8 md:p-12 relative">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 sm:p-6 md:p-10 relative">
         {/* Active Layer Banner Notice */}
         {activeLayer === 'ai' && (
           <div className="mb-6 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between text-xs text-purple-900">
@@ -429,7 +429,7 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
             {onOpenAuditModal && (
               <button
                 onClick={onOpenAuditModal}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white transition-all shadow-xs cursor-pointer active:scale-95 ml-auto"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white transition-all shadow-xs cursor-pointer active:scale-95 sm:ml-auto"
                 title="Abrir panel de auditoría criptográfica SHA-256 e inmutabilidad"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
@@ -453,9 +453,9 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
                     Auditoría de Integridad Académica Ekirayá
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-700 font-mono truncate">
-                  <span className="text-slate-500 font-sans text-[11px]">Hash SHA-256:</span>
-                  <span className="font-semibold text-emerald-950 truncate max-w-[240px] sm:max-w-none" title={analysis.documentHash}>
+                <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-xs text-slate-700 font-mono">
+                  <span className="text-slate-500 font-sans text-[11px] shrink-0">Hash SHA-256:</span>
+                  <span className="font-semibold text-emerald-950 break-all text-[11px]" title={analysis.documentHash}>
                     {analysis.documentHash}
                   </span>
                 </div>
@@ -465,7 +465,7 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
             {onOpenAuditModal && (
               <button
                 onClick={onOpenAuditModal}
-                className="text-xs text-emerald-800 hover:text-emerald-950 font-bold underline decoration-emerald-500 underline-offset-2 shrink-0 cursor-pointer self-start md:self-center"
+                className="text-xs text-emerald-800 hover:text-emerald-950 font-bold underline decoration-emerald-500 underline-offset-2 shrink-0 cursor-pointer self-start md:self-center min-h-[36px] flex items-center"
               >
                 Verificar Integridad →
               </button>

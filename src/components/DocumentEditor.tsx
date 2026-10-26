@@ -132,7 +132,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       />
 
       {/* Hero / Information Box */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -160,7 +160,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               <button
                 type="button"
                 onClick={onOpenCommunityModal}
-                className="px-3.5 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-900 font-semibold text-xs transition-colors text-center cursor-pointer min-h-[42px] flex items-center justify-center"
+                className="px-3.5 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-900 font-semibold text-xs transition-colors text-center cursor-pointer min-h-[44px] flex items-center justify-center"
               >
                 Guía del Embudo y Normas
               </button>
@@ -168,7 +168,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             <button
               onClick={onRunAnalysis}
               disabled={wordCount < 10 || isReadingFile}
-              className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-sm transition-all min-h-[42px] ${
+              className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-sm transition-all min-h-[44px] ${
                 wordCount >= 10 && !isReadingFile
                   ? 'bg-red-600 hover:bg-red-700 text-white cursor-pointer active:scale-95'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'
@@ -190,7 +190,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleFileDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-2xl p-6 sm:p-8 transition-all cursor-pointer ${
+            className={`border-2 border-dashed rounded-2xl p-4 sm:p-8 transition-all cursor-pointer ${
               isDragging
                 ? 'border-red-500 bg-red-50/60 scale-[1.005]'
                 : 'border-slate-300 hover:border-red-400 bg-slate-50/70 hover:bg-slate-50'
@@ -214,7 +214,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   <p className="text-xs text-slate-500 mt-0.5">
                     Se procesará de forma inmediata y privada en tu navegador
                   </p>
-                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2 justify-center sm:justify-start">
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
                       PDF (.pdf)
                     </span>
@@ -228,7 +228,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -236,7 +236,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     fileInputRef.current?.click();
                   }}
                   disabled={isReadingFile}
-                  className="font-bold text-xs bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="w-full sm:w-auto font-bold text-xs bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer min-h-[42px]"
                 >
                   Examinar Archivos
                 </button>
@@ -286,12 +286,12 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               Haz clic para cargar texto de prueba
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2.5">
             {SAMPLE_DOCUMENTS.map((sample) => (
               <button
                 key={sample.id}
                 onClick={() => handleSelectSample(sample.id)}
-                className="text-left p-3 rounded-xl border border-slate-200 hover:border-red-300 hover:bg-red-50/40 transition-all group cursor-pointer flex flex-col justify-between"
+                className="text-left p-2.5 sm:p-3 rounded-xl border border-slate-200 hover:border-red-300 hover:bg-red-50/40 transition-all group cursor-pointer flex flex-col justify-between min-h-[96px]"
               >
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
@@ -309,7 +309,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                       <span className="w-2 h-2 rounded-full bg-emerald-500" title="Auténtico académico" />
                     )}
                   </div>
-                  <h4 className="text-xs font-bold text-slate-900 group-hover:text-red-700 leading-snug">
+                  <h4 className="text-xs font-bold text-slate-900 group-hover:text-red-700 leading-snug line-clamp-2">
                     {sample.label}
                   </h4>
                 </div>
@@ -333,7 +333,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
             placeholder="Ej: Análisis Sociojurídico de la Inteligencia Artificial"
-            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-xs"
+            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-xs"
           />
         </div>
 
@@ -346,30 +346,30 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             value={author}
             onChange={(e) => onAuthorChange(e.target.value)}
             placeholder="Ej: Juan Camilo Pérez"
-            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-xs"
+            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-base sm:text-sm text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-xs"
           />
         </div>
       </div>
 
       {/* Text Area */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between text-xs bg-slate-50">
+        <div className="p-3 sm:p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-1 text-xs bg-slate-50">
           <div className="flex items-center gap-2 text-slate-700 font-semibold">
             <FileText className="w-4 h-4 text-slate-500" />
             <span>Contenido del documento a evaluar</span>
           </div>
-          <span className="text-slate-500">
+          <span className="text-slate-500 text-[11px]">
             Puedes editar o revisar el texto antes del informe
           </span>
         </div>
 
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           <textarea
             value={content}
             onChange={(e) => onContentChange(e.target.value)}
-            rows={14}
+            rows={12}
             placeholder="Pegue o escriba aquí el documento que desea someter a verificación de originalidad y detección de modelos de lenguaje..."
-            className="w-full font-sans text-sm text-slate-800 focus:outline-hidden resize-y leading-relaxed border-0 p-2"
+            className="w-full font-sans text-base sm:text-sm text-slate-800 focus:outline-hidden resize-y leading-relaxed border-0 p-2"
           />
         </div>
 

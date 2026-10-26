@@ -38,11 +38,11 @@ export const ColorFunnel: React.FC<ColorFunnelProps> = ({
   const aiBadgeInfo = getAiBadge(aiScore);
 
   return (
-    <div className="bg-white border-b border-slate-200 px-4 py-3 shadow-xs">
+    <div className="bg-white border-b border-slate-200 px-2.5 sm:px-4 py-2.5 sm:py-3 shadow-xs">
       <div className="max-w-7xl mx-auto space-y-2.5">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-center">
           {/* Similarity Score Card */}
-          <div className="lg:col-span-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 bg-slate-50 rounded-xl p-3 sm:p-3.5 border border-slate-200">
+          <div className="lg:col-span-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 bg-slate-50 rounded-xl p-2.5 sm:p-3.5 border border-slate-200">
             <div className="flex items-center gap-3">
               <div
                 className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center font-bold text-lg sm:text-xl text-white shadow-xs shrink-0 ${
