@@ -424,73 +424,7 @@ export default function App() {
             onOpenCommunityModal={() => setIsCommunityModalOpen(true)}
           />
 
-          {/* Institutional Status Banner */}
-          {activeUser && (
-            <div className="bg-slate-900 text-white px-4 py-2 text-xs border-b border-slate-800">
-              <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center flex-wrap gap-2">
-                  <Database className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>
-                    <strong>Perfil Activo Ekirayá:</strong>
-                  </span>
-                  <span
-                    className={`inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded-full text-[11px] ${
-                      isAdmin
-                        ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 shadow-xs'
-                        : userProfile?.role === 'student' || institutionalUser?.rol === 'estudiante'
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                        : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
-                    }`}
-                  >
-                    {isAdmin ? (
-                      <>
-                        <ShieldCheck className="w-3 h-3 text-amber-400" />
-                        <span>
-                          {user?.email?.toLowerCase() === 'mebolanos@cem.edu.co'
-                            ? `Superadmin: ${user.email}`
-                            : `Admin: ${user?.email || institutionalUser?.displayName}`}
-                        </span>
-                      </>
-                    ) : userProfile?.role === 'student' || institutionalUser?.rol === 'estudiante' ? (
-                      <>
-                        <GraduationCap className="w-3 h-3" />
-                        <span>
-                          Estudiante: {userProfile?.displayName || institutionalUser?.displayName}{' '}
-                          {institutionalUser?.taller ? `(${institutionalUser.taller})` : ''}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck className="w-3 h-3" />
-                        <span>
-                          Docente: {userProfile?.displayName || institutionalUser?.displayName}{' '}
-                          {institutionalUser?.taller ? `(${institutionalUser.taller})` : ''}
-                        </span>
-                      </>
-                    )}
-                  </span>
-                  {isAdmin && (
-                    <button
-                      onClick={() => setIsUsersModalOpen(true)}
-                      className="ml-2 text-indigo-400 hover:text-indigo-300 font-semibold underline text-[11px] cursor-pointer"
-                    >
-                      Gestionar Usuarios ({institutionalUsersCount})
-                    </button>
-                  )}
-                </div>
-                {autoIndexMessage ? (
-                  <div className="flex items-center gap-1.5 text-emerald-300 font-semibold bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-700/50 animate-in fade-in">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{autoIndexMessage}</span>
-                  </div>
-                ) : (
-                  <span className="text-[11px] text-slate-400 hidden lg:inline">
-                    Certificación Criptográfica SHA-256 Habilitada
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
+
 
 
           {/* Subheader Tabs */}

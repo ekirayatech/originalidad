@@ -1,23 +1,46 @@
-import React, { useState } from 'react';
-import { X, Lock, KeyRound, CheckCircle2, AlertCircle, RefreshCw, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Lock, KeyRound, CheckCircle2, AlertCircle, RefreshCw, User, School, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { updateInstitutionalPassword } from '../lib/firebase';
+import { updateInstitutionalUser } from '../lib/firebase';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const TALLER_PRESETS = [
+  'Taller 1 (Primaria Baja - Grados 1° a 3°)',
+  'Taller 2 (Primaria Alta - Grados 4° a 6°)',
+  'Taller 3 (Secundaria - Grados 7° a 9°)',
+  'Taller Juvenil (Media Vocacional - Grados 10° y 11°)',
+  'Cuerpo Docente Ekirayá',
+  'Coordinación Académica',
+  'Administración General'
+];
+
 export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   isOpen,
   onClose
 }) => {
   const { user, institutionalUser } = useAuth();
+  
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [taller, setTaller] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (institutionalUser) {
+      setNombre(institutionalUser.nombre || '');
+      setApellido(institutionalUser.apellido || '');
+      setTaller(institutionalUser.taller || TALLER_PRESETS[0]);
+    }
+  }, [institutionalUser, isOpen]);
 
   if (!isOpen) return null;
 
@@ -30,38 +53,71 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
     if (isGoogleUser) {
       setErrorMessage(
-        'Tu cuenta está vinculada a Google OAuth. No requieres cambiar contraseña institucional.'
+        'Tu cuenta está vinculada a Google OAuth. No requieres modificar perfil institucional local.'
       );
       return;
     }
 
     if (!institutionalUser?.id) {
-      setErrorMessage('No hay una sesión institucional activa para cambiar contraseña.');
+      setErrorMessage('No hay una sesión institucional activa para editar perfil.');
       return;
     }
 
-    if (!newPassword || newPassword.length < 4) {
-      setErrorMessage('La nueva contraseña debe tener al menos 4 caracteres.');
+    const cleanNombre = nombre.trim();
+    const cleanApellido = apellido.trim();
+    const cleanTaller = taller.trim();
+
+    if (!cleanNombre || !cleanApellido || !cleanTaller) {
+      setErrorMessage('Nombre, Apellido y Taller son obligatorios.');
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      setErrorMessage('Las contraseñas no coinciden. Por favor verifica.');
-      return;
+    let passUpdate: { contrasena?: string } = {};
+    if (newPassword.trim()) {
+      if (newPassword.trim().length < 4) {
+        setErrorMessage('La nueva contraseña debe tener al menos 4 caracteres.');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setErrorMessage('Las contraseñas no coinciden.');
+        return;
+      }
+      passUpdate.contrasena = newPassword.trim();
     }
 
     setIsSubmitting(true);
     try {
-      await updateInstitutionalPassword(institutionalUser.id, newPassword);
-      setSuccessMessage('✓ Contraseña actualizada con éxito en la base de datos institucional.');
+      await updateInstitutionalUser(institutionalUser.id, {
+        nombre: cleanNombre,
+        apellido: cleanApellido,
+        displayName: `${cleanNombre} ${cleanApellido}`,
+        taller: cleanTaller,
+        ...passUpdate
+      });
+
+      // Update local storage session cache if present
+      try {
+        const saved = localStorage.getItem('ekiraya_institutional_session');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          parsed.nombre = cleanNombre;
+          parsed.apellido = cleanApellido;
+          parsed.displayName = `${cleanNombre} ${cleanApellido}`;
+          parsed.taller = cleanTaller;
+          if (passUpdate.contrasena) parsed.contrasena = passUpdate.contrasena;
+          localStorage.setItem('ekiraya_institutional_session', JSON.stringify(parsed));
+        }
+      } catch {}
+
+      setSuccessMessage('✓ Perfil y credenciales actualizados con éxito.');
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => {
         onClose();
         setSuccessMessage(null);
-      }, 1800);
+      }, 1500);
     } catch (err: any) {
-      setErrorMessage(err?.message || 'Error al actualizar contraseña.');
+      setErrorMessage(err?.message || 'Error al actualizar perfil.');
     } finally {
       setIsSubmitting(false);
     }
@@ -74,14 +130,14 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         <div className="bg-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-              <KeyRound className="w-5 h-5" />
+              <User className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base font-bold text-white">
-                Cambiar Contraseña
+                Editar Perfil y Contraseña
               </h2>
               <p className="text-xs text-slate-400">
-                Perfil: {institutionalUser?.displayName || user?.displayName || 'Usuario Ekirayá'}
+                Colegio Bilingüe Ekirayá - CEM
               </p>
             </div>
           </div>
@@ -102,11 +158,11 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                 <span>Autenticación mediante Google</span>
               </div>
               <p>
-                Estás conectado con una cuenta de Google institucional (<strong>{user?.email}</strong>). La seguridad y gestión de tu contraseña es administrada directamente a través de tu cuenta de Google.
+                Estás conectado con una cuenta de Google institucional (<strong>{user?.email}</strong>). La gestión de tu perfil y credenciales se administra a través de tu cuenta de Google.
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               {errorMessage && (
                 <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
@@ -121,54 +177,103 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                 </div>
               )}
 
+              {/* Read-only Email */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Nueva Contraseña Institucional
+                  Correo Institucional (No modificable)
                 </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="email"
+                  disabled
+                  value={institutionalUser?.email || ''}
+                  className="w-full px-3 py-2 text-xs bg-slate-100 text-slate-500 border border-slate-300 rounded-lg cursor-not-allowed font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nombre
+                  </label>
                   <input
-                    type="password"
+                    type="text"
                     required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Mínimo 4 caracteres"
-                    className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500 font-mono"
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                    placeholder="Tu nombre"
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Apellido
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={apellido}
+                    onChange={(e) => setApellido(e.target.value)}
+                    placeholder="Tu apellido"
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Confirmar Nueva Contraseña
+                  Taller o Curso Institucional
                 </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repite la nueva contraseña"
-                    className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500 font-mono"
-                  />
+                <select
+                  value={taller}
+                  onChange={(e) => setTaller(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500"
+                >
+                  {TALLER_PRESETS.map((t, idx) => (
+                    <option key={idx} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="border-t border-slate-200 pt-3 mt-2">
+                <p className="text-[11px] font-bold text-slate-700 mb-2">Cambiar Contraseña (Opcional)</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-600 mb-1">Nueva Contraseña</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Dejar en blanco si no se cambia"
+                      className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-600 mb-1">Confirmar Contraseña</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Repetir contraseña"
+                      className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-red-500 font-mono"
+                    />
+                  </div>
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                className="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 mt-3"
               >
                 {isSubmitting ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Actualizando...</span>
+                    <span>Guardando Cambios...</span>
                   </>
                 ) : (
                   <>
-                    <KeyRound className="w-4 h-4" />
-                    <span>Guardar Nueva Contraseña</span>
+                    <User className="w-4 h-4" />
+                    <span>Guardar Cambios del Perfil</span>
                   </>
                 )}
               </button>
