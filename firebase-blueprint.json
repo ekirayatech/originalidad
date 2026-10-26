@@ -35,7 +35,9 @@
         "userId": { "type": "string", "maxLength": 128 },
         "userEmail": { "type": "string", "maxLength": 256 },
         "createdAt": { "type": "string", "maxLength": 64 },
-        "updatedAt": { "type": "string", "maxLength": 64 }
+        "updatedAt": { "type": "string", "maxLength": 64 },
+        "documentHash": { "type": "string", "maxLength": 128 },
+        "isVerified": { "type": "boolean" }
       },
       "required": ["id", "title", "author", "userId", "overallSimilarity", "originalityScore"]
     },
@@ -71,12 +73,35 @@
         "addedAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "email", "role"]
+    },
+    "InstitutionalUser": {
+      "title": "InstitutionalUser",
+      "description": "Usuario institucional con perfil docente o estudiante, taller, y contraseña para acceso sin depender de la consola del colegio",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "nombre": { "type": "string", "maxLength": 128 },
+        "apellido": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 256 },
+        "taller": { "type": "string", "maxLength": 128 },
+        "contrasena": { "type": "string", "maxLength": 128 },
+        "rol": { "type": "string", "enum": ["docente", "estudiante"], "maxLength": 32 },
+        "email": { "type": "string", "maxLength": 256 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "uid": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "nombre", "apellido", "taller", "contrasena", "rol"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
       "description": "Perfiles de usuarios y educadores"
+    },
+    "/institutional_users/{userId}": {
+      "schema": "InstitutionalUser",
+      "description": "Registro de usuarios docentes y estudiantes con taller y contraseña cargados manualmente o vía CSV"
     },
     "/documents/{documentId}": {
       "schema": "DocumentRecord",
@@ -92,3 +117,4 @@
     }
   }
 }
+

@@ -9,6 +9,7 @@ import {
   SupportedLanguage
 } from '../types';
 import { EKIRAYA_SOURCE_COLORS } from '../data/defaultCorpus';
+import { generateAuditRecord } from './cryptoAudit';
 
 // =========================================================================
 // TRILINGUAL AI / LLM RHETORICAL FORMULAS & DISCOURSE CONNECTORS
@@ -735,18 +736,31 @@ export function runOriginalityAnalysis(
     .sort((a, b) => b.occurrences - a.occurrences);
 
   const endTime = performance.now();
+  const submissionDateFormatted = new Date().toLocaleDateString('es-CO', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  // Generate unique cryptographic hash and audit certificate for academic integrity
+  const auditRecord = generateAuditRecord({
+    title: title.trim() || 'Documento sin título',
+    author: author.trim() || 'Autor no especificado',
+    content: documentText,
+    totalWords,
+    totalSentences,
+    similarityIndex,
+    aiWritingIndex,
+    submissionDate: submissionDateFormatted
+  });
 
   return {
     documentId: `DOC-${Date.now().toString().slice(-6)}`,
     title: title.trim() || 'Documento sin título',
     author: author.trim() || 'Autor no especificado',
-    submissionDate: new Date().toLocaleDateString('es-CO', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }),
+    submissionDate: submissionDateFormatted,
     totalWords,
     totalCharacters,
     totalSentences,
@@ -765,7 +779,14 @@ export function runOriginalityAnalysis(
     executionTimeMs: Math.round(endTime - startTime),
     detectedLanguage: langInfo.language,
     languageLabel: langInfo.label,
-    activeFilters: filters
+    activeFilters: filters,
+
+    // Cryptographic Integrity for Academic Audits
+    documentHash: auditRecord.documentHash,
+    contentHash: auditRecord.contentHash,
+    verificationTimestamp: auditRecord.verificationTimestamp,
+    isVerified: auditRecord.isVerified,
+    auditCertificateId: auditRecord.auditCertificateId
   };
 }
 

@@ -71,7 +71,7 @@ service cloud.firestore {
     // Validation for Analyzed Document Record
     function isValidDocument(data) {
       return data.keys().hasAll(['id', 'title', 'author', 'userId', 'overallSimilarity', 'originalityScore']) &&
-        data.keys().hasOnly(['id', 'title', 'author', 'wordCount', 'contentSnippet', 'overallSimilarity', 'originalityScore', 'studentPaperSimilarity', 'matchesCount', 'summary', 'teacherNotes', 'userId', 'userEmail', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'title', 'author', 'wordCount', 'contentSnippet', 'overallSimilarity', 'originalityScore', 'studentPaperSimilarity', 'matchesCount', 'summary', 'teacherNotes', 'userId', 'userEmail', 'createdAt', 'updatedAt', 'documentHash', 'isVerified']) &&
         data.id is string && data.id.size() <= 128 &&
         data.title is string && data.title.size() <= 300 &&
         data.author is string && data.author.size() <= 200 &&
@@ -85,6 +85,8 @@ service cloud.firestore {
         (!('summary' in data) || (data.summary is string && data.summary.size() <= 2000)) &&
         (!('teacherNotes' in data) || (data.teacherNotes is string && data.teacherNotes.size() <= 2000)) &&
         (!('userEmail' in data) || (data.userEmail is string && data.userEmail.size() <= 256)) &&
+        (!('documentHash' in data) || (data.documentHash is string && data.documentHash.size() <= 128)) &&
+        (!('isVerified' in data) || data.isVerified is bool) &&
         (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
         (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
@@ -106,13 +108,39 @@ service cloud.firestore {
         (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
     }
 
-    // USERS COLLECTION
+    // Validation for Institutional User (Docente / Estudiante with Taller & Password)
+    function isValidInstitutionalUser(data) {
+      return data.keys().hasAll(['id', 'nombre', 'apellido', 'taller', 'contrasena', 'rol']) &&
+        data.keys().hasOnly(['id', 'nombre', 'apellido', 'displayName', 'taller', 'contrasena', 'rol', 'email', 'createdAt', 'createdBy', 'uid']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.nombre is string && data.nombre.size() <= 128 &&
+        data.apellido is string && data.apellido.size() <= 128 &&
+        data.taller is string && data.taller.size() <= 128 &&
+        data.contrasena is string && data.contrasena.size() <= 128 &&
+        data.rol in ['docente', 'estudiante'] &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 256)) &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 256)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+        (!('createdBy' in data) || (data.createdBy is string && data.createdBy.size() <= 128)) &&
+        (!('uid' in data) || (data.uid is string && data.uid.size() <= 128));
+    }
+
+    // USERS COLLECTION (Google Auth synced profiles)
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isCemTeacher() || isAdmin());
-      allow list: if false;
+      allow list: if isSignedIn() && (isCemTeacher() || isAdmin());
       allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming());
       allow update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming()) && incoming().uid == existing().uid && incoming().email == existing().email;
       allow delete: if false;
+    }
+
+    // INSTITUTIONAL USERS COLLECTION (Docente and Estudiante accounts with Taller, Password & CSV upload)
+    match /institutional_users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && (isAdmin() || isCemTeacher()) && isValidInstitutionalUser(incoming());
+      allow update: if isSignedIn() && (isAdmin() || isCemTeacher()) && isValidInstitutionalUser(incoming()) && incoming().id == existing().id;
+      allow delete: if isSignedIn() && (isAdmin() || isCemTeacher());
     }
 
     // ADMINS COLLECTION
@@ -124,12 +152,13 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isAdmin() && adminId != 'mebolanos@cem.edu.co';
     }
 
+
     // ANALYZED DOCUMENTS COLLECTION
     match /documents/{documentId} {
       allow get: if isSignedIn() && isValidId(documentId) && (resource.data.userId == request.auth.uid || isCemTeacher() || isAdmin());
       allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isCemTeacher() || isAdmin());
       allow create: if isSignedIn() && isValidId(documentId) && isValidDocument(incoming()) && incoming().userId == request.auth.uid;
-      allow update: if isSignedIn() && isValidId(documentId) && (resource.data.userId == request.auth.uid || isCemTeacher() || isAdmin()) && isValidDocument(incoming()) && incoming().userId == existing().userId && incoming().id == existing().id && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'author', 'wordCount', 'contentSnippet', 'overallSimilarity', 'originalityScore', 'studentPaperSimilarity', 'matchesCount', 'summary', 'teacherNotes', 'updatedAt']);
+      allow update: if isSignedIn() && isValidId(documentId) && (resource.data.userId == request.auth.uid || isCemTeacher() || isAdmin()) && isValidDocument(incoming()) && incoming().userId == existing().userId && incoming().id == existing().id && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'author', 'wordCount', 'contentSnippet', 'overallSimilarity', 'originalityScore', 'studentPaperSimilarity', 'matchesCount', 'summary', 'teacherNotes', 'updatedAt', 'documentHash', 'isVerified']);
       allow delete: if isSignedIn() && isValidId(documentId) && (resource.data.userId == request.auth.uid || isCemTeacher() || isAdmin());
     }
 

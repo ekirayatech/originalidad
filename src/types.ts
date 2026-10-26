@@ -78,6 +78,13 @@ export interface AnalysisSummary {
   // Execution
   executionTimeMs: number;
   activeFilters: AnalysisFilters;
+
+  // Cryptographic Audit & Integrity
+  documentHash: string; // 64-char Hex SHA-256 cryptographic signature
+  contentHash: string; // 64-char Hex SHA-256 hash of document raw text
+  verificationTimestamp: string; // Timestamp when hash was certified
+  isVerified: boolean; // Integrity verification status for academic audits
+  auditCertificateId: string; // Unique institutional audit ID
 }
 
 export interface ReferenceDocument {
@@ -100,4 +107,20 @@ export interface LegalRegulation {
   keyArticles: string;
   complianceReason: string;
   relevanceToOriginalityAndAI: string;
+}
+
+export type InstitutionalUserRole = 'docente' | 'estudiante';
+
+export interface InstitutionalUser {
+  id: string;
+  nombre: string;
+  apellido: string;
+  displayName: string;
+  taller: string;
+  contrasena: string;
+  rol: InstitutionalUserRole;
+  email: string;
+  createdAt: string;
+  createdBy?: string;
+  uid?: string;
 }

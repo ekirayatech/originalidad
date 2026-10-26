@@ -3,19 +3,17 @@ import {
   FileText,
   Download,
   FileSpreadsheet,
-  BookOpen,
   PlusCircle,
-  HardDrive,
   Users,
   HelpCircle,
   ShieldCheck,
-  ShieldAlert,
   UploadCloud,
   Cloud,
   User,
   LogOut,
   FolderOpen,
-  ChevronDown
+  ChevronDown,
+  GraduationCap
 } from 'lucide-react';
 import { AnalysisSummary } from '../types';
 import { EKIRAYA_CONFIG } from '../data/ekirayaConfig';
@@ -25,16 +23,17 @@ interface NavbarProps {
   analysis: AnalysisSummary | null;
   onNewDocument: () => void;
   onOpenUploadModal: () => void;
-  onOpenCorpusModal: () => void;
+  onOpenUsersModal: () => void;
   onOpenLegalModal: () => void;
   onOpenCommunityModal: () => void;
   onOpenRecordsModal: () => void;
   onOpenAdminModal: () => void;
+  onOpenLoginModal: () => void;
   onExportPDF: () => void;
   onExportCSV: () => void;
+  onOpenAuditModal?: () => void;
   isEditorOpen: boolean;
-  corpusCount?: number;
-  customCorpusCount?: number;
+  usersCount?: number;
   savedRecordsCount?: number;
 }
 
@@ -42,22 +41,25 @@ export const Navbar: React.FC<NavbarProps> = ({
   analysis,
   onNewDocument,
   onOpenUploadModal,
-  onOpenCorpusModal,
+  onOpenUsersModal,
   onOpenLegalModal,
   onOpenCommunityModal,
   onOpenRecordsModal,
   onOpenAdminModal,
+  onOpenLoginModal,
   onExportPDF,
   onExportCSV,
+  onOpenAuditModal,
   isEditorOpen,
-  corpusCount = 0,
-  customCorpusCount = 0,
+  usersCount = 0,
   savedRecordsCount = 0
 }) => {
-  const { user, userProfile, isAdmin, adminsList, login, logout, loading: authLoading } = useAuth();
+  const { user, userProfile, institutionalUser, isAdmin, adminsList, logout } = useAuth();
   const [logoFailed, setLogoFailed] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const activeUser = user || institutionalUser;
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -120,27 +122,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="xs:hidden sm:hidden">Subir</span>
           </button>
 
-          {/* Reference Corpus Modal Button - ONLY visible to Administrators */}
-          {isAdmin && (
-            <button
-              onClick={onOpenCorpusModal}
-              className="flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-sky-950/80 hover:bg-sky-900 active:scale-95 text-sky-200 border border-sky-700 shadow-xs transition-all cursor-pointer"
-              title="Biblioteca de Cotejo Central (Exclusivo Administradores)"
-            >
-              <BookOpen className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-              <span className="hidden sm:inline">Biblioteca Cotejo</span>
-              <span className="sm:hidden">Cotejo</span>
-              {customCorpusCount > 0 ? (
-                <span className="bg-sky-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
-                  {customCorpusCount}
-                </span>
-              ) : corpusCount > 0 ? (
-                <span className="bg-slate-700 text-slate-300 text-[10px] px-1.5 py-0.2 rounded-full hidden md:inline">
-                  {corpusCount}
-                </span>
-              ) : null}
-            </button>
-          )}
+          {/* User Management Button (Docentes / Estudiantes / CSV) */}
+          <button
+            onClick={onOpenUsersModal}
+            className="flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-950/80 hover:bg-indigo-900 active:scale-95 text-indigo-200 border border-indigo-700 shadow-xs transition-all cursor-pointer"
+            title="Gestión de Usuarios (Docentes y Estudiantes con Taller, Contraseña y Carga Masiva CSV)"
+          >
+            <Users className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="hidden sm:inline">Usuarios</span>
+            <span className="sm:hidden">Users</span>
+            {usersCount > 0 && (
+              <span className="bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
+                {usersCount}
+              </span>
+            )}
+          </button>
 
           {/* Admin Management Button - ONLY visible to Administrators */}
           {isAdmin && (
@@ -161,16 +157,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
 
           {/* Firebase Saved Records Button (if user is authenticated) */}
-          {user && (
+          {activeUser && (
             <button
               onClick={onOpenRecordsModal}
-              className="flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-950/90 hover:bg-indigo-900 active:scale-95 text-indigo-200 border border-indigo-700 shadow-xs transition-all cursor-pointer"
+              className="flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-sky-950/90 hover:bg-sky-900 active:scale-95 text-sky-200 border border-sky-700 shadow-xs transition-all cursor-pointer"
               title="Ver historial de evaluaciones y documentos guardados en Firestore"
             >
-              <Cloud className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <Cloud className="w-3.5 h-3.5 text-sky-400 shrink-0" />
               <span className="hidden sm:inline">Registros</span>
               {savedRecordsCount > 0 && (
-                <span className="bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
+                <span className="bg-sky-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
                   {savedRecordsCount}
                 </span>
               )}
@@ -179,10 +175,24 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {analysis && !isEditorOpen && (
             <>
+              {onOpenAuditModal && (
+                <button
+                  onClick={onOpenAuditModal}
+                  className="flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-950/90 hover:bg-emerald-900 active:scale-95 text-emerald-200 border border-emerald-600 shadow-xs transition-all cursor-pointer"
+                  title="Auditoría de integridad académica y verificación criptográfica SHA-256"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="hidden lg:inline">Auditoría</span>
+                  <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-1.5 py-0.2 rounded-full border border-emerald-500/40">
+                    SHA-256
+                  </span>
+                </button>
+              )}
+
               <button
                 onClick={onExportPDF}
                 className="flex items-center gap-1 min-h-[38px] sm:min-h-[40px] px-2 sm:px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 transition-all cursor-pointer"
-                title="Descargar reporte oficial en PDF para el Colegio Bilingüe Ekirayá"
+                title="Descargar reporte oficial en PDF para el Colegio Bilingüe Ekirayá con Badge Verificado"
               >
                 <Download className="w-3.5 h-3.5 text-red-400" />
                 <span>PDF</span>
@@ -220,23 +230,25 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* User Profile / Firebase Auth Area */}
           <div className="relative" ref={userMenuRef}>
-            {user ? (
+            {activeUser ? (
               <div>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className={`flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] p-1 sm:px-2.5 py-1 text-xs font-medium rounded-lg border transition-all cursor-pointer ${
                     isAdmin
                       ? 'bg-amber-950/80 hover:bg-amber-900 border-amber-600 text-amber-200'
-                      : userProfile?.role === 'student'
+                      : userProfile?.role === 'student' || institutionalUser?.rol === 'estudiante'
                       ? 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-700 text-emerald-200'
                       : 'bg-indigo-950/80 hover:bg-indigo-900 border-indigo-700 text-indigo-200'
                   }`}
-                  title={`${user.email} (${isAdmin ? 'Administrador' : userProfile?.roleLabel || 'Docente CEM'})`}
+                  title={`${userProfile?.email || institutionalUser?.email || ''} (${
+                    isAdmin ? 'Administrador' : userProfile?.roleLabel || 'Docente CEM'
+                  })`}
                 >
-                  {user.photoURL ? (
+                  {user?.photoURL ? (
                     <img
                       src={user.photoURL}
-                      alt={user.displayName || 'Usuario'}
+                      alt={userProfile?.displayName || 'Usuario'}
                       className="w-7 h-7 rounded-full object-cover border border-slate-600 shrink-0"
                     />
                   ) : (
@@ -244,23 +256,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                       className={`w-7 h-7 rounded-full text-white font-bold flex items-center justify-center text-xs shrink-0 ${
                         isAdmin
                           ? 'bg-amber-600'
-                          : userProfile?.role === 'student'
+                          : userProfile?.role === 'student' || institutionalUser?.rol === 'estudiante'
                           ? 'bg-emerald-600'
                           : 'bg-indigo-600'
                       }`}
                     >
-                      {(user.displayName || user.email || 'U')[0].toUpperCase()}
+                      {(userProfile?.displayName || user?.displayName || institutionalUser?.nombre || 'U')[0].toUpperCase()}
                     </div>
                   )}
                   <div className="hidden md:flex flex-col text-left leading-tight">
                     <span className="max-w-[110px] truncate text-white font-semibold text-xs">
-                      {user.displayName?.split(' ')[0] || (isAdmin ? 'Admin' : userProfile?.role === 'student' ? 'Estudiante' : 'Docente')}
+                      {userProfile?.displayName?.split(' ')[0] || institutionalUser?.nombre || 'Usuario'}
                     </span>
                     <span
                       className={`text-[9px] font-bold uppercase tracking-wider ${
                         isAdmin
                           ? 'text-amber-400'
-                          : userProfile?.role === 'student'
+                          : userProfile?.role === 'student' || institutionalUser?.rol === 'estudiante'
                           ? 'text-emerald-400'
                           : 'text-indigo-400'
                       }`}
@@ -269,6 +281,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                         ? user?.email?.toLowerCase() === 'mebolanos@cem.edu.co'
                           ? 'Superadmin'
                           : 'Admin CEM'
+                        : institutionalUser
+                        ? `${institutionalUser.rol.toUpperCase()}`
                         : userProfile?.roleLabel || 'Docente CEM'}
                     </span>
                   </div>
@@ -284,7 +298,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
                             isAdmin
                               ? 'bg-amber-50 text-amber-800 border-amber-300'
-                              : userProfile?.role === 'student'
+                              : userProfile?.role === 'student' || institutionalUser?.rol === 'estudiante'
                               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                               : 'bg-indigo-50 text-indigo-800 border-indigo-200'
                           }`}
@@ -293,22 +307,38 @@ export const Navbar: React.FC<NavbarProps> = ({
                             ? user?.email?.toLowerCase() === 'mebolanos@cem.edu.co'
                               ? 'Superadministrador CEM'
                               : 'Administrador CEM'
+                            : institutionalUser
+                            ? `${institutionalUser.rol.toUpperCase()} - ${institutionalUser.taller}`
                             : userProfile?.roleLabel || 'Docente CEM'}
                         </span>
                         <span className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Cotejo Activo
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Activo
                         </span>
                       </div>
                       <p className="font-bold text-xs text-slate-900 truncate">
-                        {user.displayName || (isAdmin ? 'Administrador Ekirayá' : userProfile?.role === 'student' ? 'Estudiante CEM' : 'Docente CEM')}
+                        {userProfile?.displayName || institutionalUser?.displayName || 'Usuario Ekirayá'}
                       </p>
-                      <p className="text-[11px] text-slate-500 font-mono truncate">{user.email}</p>
+                      <p className="text-[11px] text-slate-500 font-mono truncate">
+                        {user?.email || institutionalUser?.email}
+                      </p>
                       <p className="text-[10px] text-slate-400 mt-1">
                         Colegio Bilingüe Ekirayá - CEM
                       </p>
                     </div>
 
                     <div className="py-1">
+                      {/* Direct access to User Management */}
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onOpenUsersModal();
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer font-medium"
+                      >
+                        <Users className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <span>Gestión de Usuarios (Docentes/Estudiantes)</span>
+                      </button>
+
                       <button
                         onClick={() => {
                           setIsUserMenuOpen(false);
@@ -324,23 +354,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                           </span>
                         )}
                       </button>
-
-                      {/* Only Admin can see/access the Biblioteca de Cotejo */}
-                      {isAdmin && (
-                        <button
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            onOpenCorpusModal();
-                          }}
-                          className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer font-medium"
-                        >
-                          <BookOpen className="w-4 h-4 text-sky-600 shrink-0" />
-                          <span>Biblioteca Central de Cotejo</span>
-                          <span className="ml-auto text-[10px] text-sky-600 font-semibold bg-sky-50 px-1.5 py-0.2 rounded">
-                            {corpusCount} docs
-                          </span>
-                        </button>
-                      )}
 
                       {/* Admin Management Option */}
                       {isAdmin && (
@@ -388,19 +401,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             ) : (
               <button
-                onClick={async () => {
-                  try {
-                    await login();
-                  } catch (e) {
-                    console.error('Error logging in:', e);
-                  }
-                }}
-                disabled={authLoading}
+                onClick={onOpenLoginModal}
                 className="flex items-center gap-1.5 min-h-[38px] sm:min-h-[40px] px-3 py-1.5 text-xs font-bold rounded-lg bg-sky-600 hover:bg-sky-500 active:scale-95 text-white shadow-xs transition-all cursor-pointer"
-                title="Ingresar con correo institucional @est.cem.edu.co (Estudiantes) o @cem.edu.co (Docentes)"
+                title="Ingresar con Google o Contraseña Institucional Ekirayá"
               >
                 <User className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden xs:inline">Ingreso Institucional CEM</span>
+                <span className="hidden xs:inline">Ingreso Institucional</span>
                 <span className="xs:hidden">Ingreso</span>
               </button>
             )}

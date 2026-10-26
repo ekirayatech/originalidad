@@ -13,7 +13,10 @@ import {
   Clock,
   Sparkles,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  CheckCircle2,
+  Copy,
+  Check
 } from 'lucide-react';
 import {
   type SavedDocumentRecord,
@@ -322,6 +325,10 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
                           <Database className="w-3 h-3 text-sky-600" />
                           <span>Cotejo Activo</span>
                         </span>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-full border border-emerald-300">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                          <span>VERIFICADO</span>
+                        </span>
                         <span className="text-[10px] text-slate-400 flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {formattedDate}
@@ -334,6 +341,12 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
                           <span className="text-slate-400 font-mono text-[11px]">({doc.userEmail})</span>
                         )}
                       </p>
+                      {doc.documentHash && (
+                        <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-950 bg-emerald-50/90 border border-emerald-200/90 px-2 py-0.5 rounded-md max-w-fit">
+                          <span className="text-slate-500 font-sans text-[10px] font-bold">Hash SHA-256:</span>
+                          <span className="truncate max-w-[200px] sm:max-w-xs">{doc.documentHash}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Scores */}

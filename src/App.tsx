@@ -6,11 +6,13 @@ import { SourcesPanel } from './components/SourcesPanel';
 import { AIDetectionPanel } from './components/AIDetectionPanel';
 import { DocumentEditor } from './components/DocumentEditor';
 import { LegalComplianceModal } from './components/LegalComplianceModal';
-import { CustomCorpusModal } from './components/CustomCorpusModal';
+import { UserManagementModal } from './components/UserManagementModal';
+import { InstitutionalLoginModal } from './components/InstitutionalLoginModal';
 import { CommunityGuidanceModal } from './components/CommunityGuidanceModal';
 import { UploadDocumentModal } from './components/UploadDocumentModal';
 import { DocumentRecordsModal } from './components/DocumentRecordsModal';
 import { AdminManagementModal } from './components/AdminManagementModal';
+import { AuditVerificationModal } from './components/AuditVerificationModal';
 import { DEFAULT_CORPUS } from './data/defaultCorpus';
 import { SAMPLE_DOCUMENTS } from './data/sampleDocuments';
 import { EKIRAYA_CONFIG } from './data/ekirayaConfig';
@@ -25,6 +27,7 @@ import {
   deleteReferenceDocFromFirestore,
   autoIndexAnalyzedDocument,
   subscribeUserOrSchoolDocuments,
+  subscribeInstitutionalUsers,
   type SavedDocumentRecord
 } from './lib/firebase';
 import {
@@ -40,11 +43,14 @@ import {
   CheckCircle2,
   ShieldCheck,
   Database,
-  LogIn
+  LogIn,
+  Users
 } from 'lucide-react';
 
 export default function App() {
-  const { user, userProfile, isAdmin, login } = useAuth();
+  const { user, userProfile, institutionalUser, isAdmin, login } = useAuth();
+  const activeUser = user || institutionalUser;
+
 
   // Corpus state (default + custom stored in localStorage + Firebase cloud sync)
   const [corpus, setCorpus] = useState<ReferenceDocument[]>(() => {
@@ -87,10 +93,15 @@ export default function App() {
   // Modals state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
-  const [isCorpusModalOpen, setIsCorpusModalOpen] = useState(false);
+  const [isUsersModalOpen, setIsUsersModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
   const [isRecordsModalOpen, setIsRecordsModalOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+
+  // Users count from Firestore
+  const [institutionalUsersCount, setInstitutionalUsersCount] = useState<number>(0);
 
   // Firebase records state
   const [savedRecordsCount, setSavedRecordsCount] = useState<number>(0);
@@ -99,32 +110,49 @@ export default function App() {
   const [autoIndexMessage, setAutoIndexMessage] = useState<string | null>(null);
   const lastIndexedKeyRef = useRef<string>('');
 
+  // Subscribe to institutional users count
+  useEffect(() => {
+    const unsubscribe = subscribeInstitutionalUsers(
+      (uList) => {
+        setInstitutionalUsersCount(uList.length);
+      },
+      (err) => console.warn('Usuarios en modo seguro:', err)
+    );
+    return () => unsubscribe();
+  }, []);
+
   // If a student logs in, default their author name automatically
   useEffect(() => {
-    if (userProfile?.role === 'student') {
-      const studentName = userProfile.displayName || user?.displayName || 'Estudiante CEM';
+    if (userProfile?.role === 'student' || institutionalUser?.rol === 'estudiante') {
+      const studentName =
+        institutionalUser?.displayName ||
+        userProfile?.displayName ||
+        user?.displayName ||
+        'Estudiante Ekirayá';
       if (author === 'Sofía Gómez' || author === 'Estudiante Ekirayá' || !author.trim()) {
         setAuthor(studentName);
       }
     }
-  }, [userProfile, user, author]);
+  }, [userProfile, institutionalUser, user, author]);
 
   // Listen to saved records in Firestore (teachers see school-wide, students see their own)
   useEffect(() => {
-    if (!user) {
+    if (!user && !institutionalUser) {
       setSavedRecordsCount(0);
       return;
     }
 
-    const isTeacher = userProfile?.role === 'teacher';
+    const currentUid = user?.uid || institutionalUser?.id || 'guest';
+    const isTeacher = userProfile?.role === 'teacher' || institutionalUser?.rol === 'docente';
     const unsubscribe = subscribeUserOrSchoolDocuments(
-      user.uid,
+      currentUid,
       isTeacher,
       (docs) => {
         setSavedRecordsCount(docs.length);
       },
       (err) => console.error('Error escuchando documentos de usuario:', err)
     );
+
 
     return () => unsubscribe();
   }, [user, userProfile]);
@@ -350,22 +378,17 @@ export default function App() {
         analysis={analysis}
         onNewDocument={() => setIsEditorOpen(!isEditorOpen)}
         onOpenUploadModal={() => setIsUploadModalOpen(true)}
-        onOpenCorpusModal={() => {
-          if (isAdmin) {
-            setIsCorpusModalOpen(true);
-          } else {
-            alert('Acceso restringido: únicamente los administradores pueden ver la biblioteca de cotejo.');
-          }
-        }}
+        onOpenUsersModal={() => setIsUsersModalOpen(true)}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
         onOpenLegalModal={() => setIsLegalModalOpen(true)}
         onOpenCommunityModal={() => setIsCommunityModalOpen(true)}
         onOpenRecordsModal={() => setIsRecordsModalOpen(true)}
         onOpenAdminModal={() => setIsAdminModalOpen(true)}
         onExportPDF={() => analysis && exportAnalysisToPDF(analysis, content)}
         onExportCSV={() => analysis && exportAnalysisToCSV(analysis)}
+        onOpenAuditModal={() => setIsAuditModalOpen(true)}
         isEditorOpen={isEditorOpen}
-        corpusCount={corpus.length}
-        customCorpusCount={corpus.filter((d) => d.isCustomUploaded).length}
+        usersCount={institutionalUsersCount}
         savedRecordsCount={savedRecordsCount}
       />
 
@@ -395,20 +418,20 @@ export default function App() {
             onOpenCommunityModal={() => setIsCommunityModalOpen(true)}
           />
 
-          {/* Institutional Cotejo Status Banner */}
-          {user ? (
-            <div className="bg-sky-950 text-white px-4 py-2 text-xs border-b border-sky-800">
+          {/* Institutional Status Banner */}
+          {activeUser ? (
+            <div className="bg-slate-900 text-white px-4 py-2 text-xs border-b border-slate-800">
               <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center flex-wrap gap-2">
-                  <Database className="w-4 h-4 text-sky-400 shrink-0" />
+                  <Database className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>
-                    <strong>Repositorio de Cotejo CEM:</strong> Documento indexado automáticamente para cotejar contra futuras entregas.
+                    <strong>Perfil Activo Ekirayá:</strong>
                   </span>
                   <span
                     className={`inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded-full text-[11px] ${
                       isAdmin
                         ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 shadow-xs'
-                        : userProfile?.role === 'student'
+                        : userProfile?.role === 'student' || institutionalUser?.rol === 'estudiante'
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                         : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
                     }`}
@@ -417,23 +440,35 @@ export default function App() {
                       <>
                         <ShieldCheck className="w-3 h-3 text-amber-400" />
                         <span>
-                          {user.email?.toLowerCase() === 'mebolanos@cem.edu.co'
+                          {user?.email?.toLowerCase() === 'mebolanos@cem.edu.co'
                             ? `Superadmin: ${user.email}`
-                            : `Admin: ${user.email}`}
+                            : `Admin: ${user?.email || institutionalUser?.displayName}`}
                         </span>
                       </>
-                    ) : userProfile?.role === 'student' ? (
+                    ) : userProfile?.role === 'student' || institutionalUser?.rol === 'estudiante' ? (
                       <>
                         <GraduationCap className="w-3 h-3" />
-                        <span>Estudiante CEM: {user.email}</span>
+                        <span>
+                          Estudiante: {userProfile?.displayName || institutionalUser?.displayName}{' '}
+                          {institutionalUser?.taller ? `(${institutionalUser.taller})` : ''}
+                        </span>
                       </>
                     ) : (
                       <>
                         <ShieldCheck className="w-3 h-3" />
-                        <span>Docente CEM: {user.email}</span>
+                        <span>
+                          Docente: {userProfile?.displayName || institutionalUser?.displayName}{' '}
+                          {institutionalUser?.taller ? `(${institutionalUser.taller})` : ''}
+                        </span>
                       </>
                     )}
                   </span>
+                  <button
+                    onClick={() => setIsUsersModalOpen(true)}
+                    className="ml-2 text-indigo-400 hover:text-indigo-300 font-semibold underline text-[11px] cursor-pointer"
+                  >
+                    Gestionar Usuarios ({institutionalUsersCount})
+                  </button>
                 </div>
                 {autoIndexMessage ? (
                   <div className="flex items-center gap-1.5 text-emerald-300 font-semibold bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-700/50 animate-in fade-in">
@@ -441,31 +476,41 @@ export default function App() {
                     <span>{autoIndexMessage}</span>
                   </div>
                 ) : (
-                  <span className="text-[11px] text-sky-300/80 hidden lg:inline">
-                    Base de Datos en Tiempo Real (Firestore)
+                  <span className="text-[11px] text-slate-400 hidden lg:inline">
+                    Certificación Criptográfica SHA-256 Habilitada
                   </span>
                 )}
               </div>
             </div>
           ) : (
-            <div className="bg-amber-950/90 text-amber-100 px-4 py-2 text-xs border-b border-amber-800/80">
+            <div className="bg-slate-900 text-slate-200 px-4 py-2 text-xs border-b border-slate-800">
               <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Database className="w-4 h-4 text-amber-400 shrink-0" />
+                  <Database className="w-4 h-4 text-red-400 shrink-0" />
                   <span>
-                    <strong>Acceso Institucional CEM:</strong> Los estudiantes ingresan con <code>@est.cem.edu.co</code> y docentes con <code>@cem.edu.co</code> para almacenar y cotejar automáticamente en la base de datos.
+                    <strong>Acceso Institucional Ekirayá:</strong> Ingreso para Estudiantes (<code>@est.cem.edu.co</code>) y Docentes (<code>@cem.edu.co</code>) sin depender de la consola Google del colegio.
                   </span>
                 </div>
-                <button
-                  onClick={() => login()}
-                  className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-md shadow-xs transition-all cursor-pointer text-xs"
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>Ingresar con Google CEM</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsLoginModalOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded-md shadow-xs transition-all cursor-pointer text-xs"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Ingresar (Google o Contraseña)</span>
+                  </button>
+                  <button
+                    onClick={() => setIsUsersModalOpen(true)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-md border border-slate-700 transition-all cursor-pointer text-xs"
+                  >
+                    <Users className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Subir Usuarios CSV</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
+
 
           {/* Subheader Tabs */}
           <div className="bg-white border-b border-slate-200 px-4 sm:px-6">
@@ -556,6 +601,7 @@ export default function App() {
                 onSaveToFirebase={handleSaveCurrentToFirebase}
                 isSavedToFirebase={isSavedToFirebase}
                 isSavingToFirebase={isSavingToFirebase}
+                onOpenAuditModal={() => setIsAuditModalOpen(true)}
               />
               <SourcesPanel
                 sources={analysis.sources}
@@ -630,14 +676,19 @@ export default function App() {
         onClose={() => setIsLegalModalOpen(false)}
       />
 
-      {/* Custom Reference Corpus Modal */}
-      <CustomCorpusModal
-        isOpen={isCorpusModalOpen}
-        onClose={() => setIsCorpusModalOpen(false)}
-        corpus={corpus}
-        onAddDocument={handleAddCorpusDoc}
-        onDeleteDocument={handleDeleteCorpusDoc}
+      {/* Institutional User Management Modal (Docentes, Estudiantes, CSV) */}
+      <UserManagementModal
+        isOpen={isUsersModalOpen}
+        onClose={() => setIsUsersModalOpen(false)}
       />
+
+      {/* Institutional Login Modal (Google Directo + Contraseña) */}
+      <InstitutionalLoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onOpenUserManagement={() => setIsUsersModalOpen(true)}
+      />
+
 
       {/* Firebase Saved Document Records Modal */}
       <DocumentRecordsModal
@@ -650,6 +701,15 @@ export default function App() {
       <AdminManagementModal
         isOpen={isAdminModalOpen}
         onClose={() => setIsAdminModalOpen(false)}
+      />
+
+      {/* Audit Verification & Cryptographic Hash Modal for Ekirayá */}
+      <AuditVerificationModal
+        isOpen={isAuditModalOpen}
+        onClose={() => setIsAuditModalOpen(false)}
+        analysis={analysis}
+        documentText={content}
+        onExportPDF={() => analysis && exportAnalysisToPDF(analysis, content)}
       />
     </div>
   );

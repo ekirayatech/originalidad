@@ -16,7 +16,10 @@ import {
   Cpu,
   Languages,
   Cloud,
-  Check
+  Check,
+  ShieldCheck,
+  CheckCircle2,
+  Copy
 } from 'lucide-react';
 
 interface ReportViewerProps {
@@ -29,6 +32,7 @@ interface ReportViewerProps {
   onSaveToFirebase?: () => void;
   isSavedToFirebase?: boolean;
   isSavingToFirebase?: boolean;
+  onOpenAuditModal?: () => void;
 }
 
 type LayerMode = 'all' | 'similarity' | 'ai' | 'plain';
@@ -42,7 +46,8 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
   isAlreadyInCorpus,
   onSaveToFirebase,
   isSavedToFirebase,
-  isSavingToFirebase
+  isSavingToFirebase,
+  onOpenAuditModal
 }) => {
   const [activeLayer, setActiveLayer] = useState<LayerMode>('all');
   const [selectedSegment, setSelectedSegment] = useState<MatchedSegment | null>(null);
@@ -418,6 +423,51 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
                     ? '✓ Almacenado en Base de Datos'
                     : 'Almacenar en Base de Datos'}
                 </span>
+              </button>
+            )}
+
+            {onOpenAuditModal && (
+              <button
+                onClick={onOpenAuditModal}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white transition-all shadow-xs cursor-pointer active:scale-95 ml-auto"
+                title="Abrir panel de auditoría criptográfica SHA-256 e inmutabilidad"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Certificado de Integridad (SHA-256)</span>
+              </button>
+            )}
+          </div>
+
+          {/* Cryptographic Hash & Verified Badge */}
+          <div className="mt-3.5 p-3 bg-gradient-to-r from-emerald-50/90 to-teal-50/70 border border-emerald-300/80 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-950 bg-emerald-200/90 border border-emerald-300 px-2 py-0.5 rounded-md">
+                    ✓ VERIFICADO / VERIFIED
+                  </span>
+                  <span className="text-[11px] font-bold text-emerald-900">
+                    Auditoría de Integridad Académica Ekirayá
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-700 font-mono truncate">
+                  <span className="text-slate-500 font-sans text-[11px]">Hash SHA-256:</span>
+                  <span className="font-semibold text-emerald-950 truncate max-w-[240px] sm:max-w-none" title={analysis.documentHash}>
+                    {analysis.documentHash}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {onOpenAuditModal && (
+              <button
+                onClick={onOpenAuditModal}
+                className="text-xs text-emerald-800 hover:text-emerald-950 font-bold underline decoration-emerald-500 underline-offset-2 shrink-0 cursor-pointer self-start md:self-center"
+              >
+                Verificar Integridad →
               </button>
             )}
           </div>

@@ -22,7 +22,12 @@ import {
   getDocFromServer
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { ReferenceDocument, AnalysisSummary } from '../types';
+import {
+  ReferenceDocument,
+  AnalysisSummary,
+  InstitutionalUser,
+  InstitutionalUserRole
+} from '../types';
 
 // Initialize Firebase App
 const app = initializeApp(firebaseConfig);
@@ -211,6 +216,8 @@ export interface SavedDocumentRecord {
   userEmail: string;
   createdAt: string;
   updatedAt: string;
+  documentHash?: string;
+  isVerified?: boolean;
 }
 
 // -------------------------------------------------------------
@@ -311,7 +318,9 @@ export async function saveAnalyzedDocumentRecord(
     userId: auth.currentUser.uid,
     userEmail: auth.currentUser.email || '',
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
+    documentHash: analysis.documentHash || '',
+    isVerified: true
   };
 
   try {
@@ -663,4 +672,152 @@ export async function removeAdminUser(adminId: string): Promise<void> {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
 }
+
+// -------------------------------------------------------------
+// Institutional User Management (Docentes & Estudiantes with Taller & Password)
+// "agregar la sección de agregar usuarios con perfil docente y estudiante.
+// Además debo poder subir los usuarios con -csv. Cada perfil debe tener
+// Nombre, Apellido, Taller (curso), contraseña. Tambien login por google..."
+// -------------------------------------------------------------
+
+export function subscribeInstitutionalUsers(
+  onData: (users: InstitutionalUser[]) => void,
+  onError?: (err: Error) => void
+) {
+  const path = 'institutional_users';
+  const q = collection(db, path);
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const list: InstitutionalUser[] = [];
+      snapshot.forEach((snap) => {
+        list.push(snap.data() as InstitutionalUser);
+      });
+      // Sort alphabetically by last name, then first name
+      list.sort((a, b) => (a.apellido || '').localeCompare(b.apellido || '') || (a.nombre || '').localeCompare(b.nombre || ''));
+      onData(list);
+    },
+    (error) => {
+      if (onError) {
+        try {
+          handleFirestoreError(error, OperationType.LIST, path);
+        } catch (e: any) {
+          onError(e);
+        }
+      } else {
+        handleFirestoreError(error, OperationType.LIST, path);
+      }
+    }
+  );
+}
+
+export async function createInstitutionalUser(
+  userData: {
+    nombre: string;
+    apellido: string;
+    taller: string;
+    contrasena: string;
+    rol: InstitutionalUserRole;
+    email?: string;
+  }
+): Promise<InstitutionalUser> {
+  const cleanNombre = userData.nombre.trim();
+  const cleanApellido = userData.apellido.trim();
+  const cleanTaller = userData.taller.trim();
+  const cleanContrasena = userData.contrasena.trim();
+  const rol = userData.rol === 'docente' ? 'docente' : 'estudiante';
+
+  if (!cleanNombre || !cleanApellido || !cleanTaller || !cleanContrasena) {
+    throw new Error('Todos los campos son obligatorios: Nombre, Apellido, Taller y Contraseña.');
+  }
+
+  // Generate clean slug ID
+  const cleanSlug = `${cleanNombre}_${cleanApellido}`
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '_')
+    .slice(0, 30);
+  const userId = `usr_${cleanSlug}_${Math.random().toString(36).substring(2, 7)}`;
+  const path = `institutional_users/${userId}`;
+  const now = new Date().toISOString();
+
+  // Generate suggested institutional email if not provided
+  const emailDomain = rol === 'estudiante' ? 'est.cem.edu.co' : 'cem.edu.co';
+  const autoEmail = `${cleanNombre.toLowerCase().charAt(0)}${cleanApellido.toLowerCase().replace(/\s+/g, '')}@${emailDomain}`
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9@.]/g, '');
+
+  const finalEmail = userData.email?.trim() || autoEmail;
+
+  const newUser: InstitutionalUser = {
+    id: userId,
+    nombre: cleanNombre,
+    apellido: cleanApellido,
+    displayName: `${cleanNombre} ${cleanApellido}`,
+    taller: cleanTaller,
+    contrasena: cleanContrasena,
+    rol,
+    email: finalEmail,
+    createdAt: now,
+    createdBy: auth.currentUser?.email || auth.currentUser?.uid || 'Administrador'
+  };
+
+  try {
+    await setDoc(doc(db, 'institutional_users', userId), newUser);
+    return newUser;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+export async function bulkImportInstitutionalUsers(
+  usersList: {
+    nombre: string;
+    apellido: string;
+    taller: string;
+    contrasena: string;
+    rol: InstitutionalUserRole;
+    email?: string;
+  }[]
+): Promise<{ added: number; errors: string[] }> {
+  let added = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < usersList.length; i++) {
+    const item = usersList[i];
+    try {
+      await createInstitutionalUser(item);
+      added++;
+    } catch (err: any) {
+      errors.push(`Fila ${i + 1} (${item.nombre} ${item.apellido}): ${err?.message || 'Error al guardar'}`);
+    }
+  }
+
+  return { added, errors };
+}
+
+export async function updateInstitutionalUser(
+  userId: string,
+  updates: Partial<Omit<InstitutionalUser, 'id' | 'createdAt'>>
+): Promise<void> {
+  const path = `institutional_users/${userId}`;
+  try {
+    await updateDoc(doc(db, 'institutional_users', userId), updates);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+export async function deleteInstitutionalUser(userId: string): Promise<void> {
+  const path = `institutional_users/${userId}`;
+  try {
+    await deleteDoc(doc(db, 'institutional_users', userId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
 

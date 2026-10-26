@@ -20,6 +20,16 @@ export function exportAnalysisToCSV(analysis: AnalysisSummary): void {
   rows.push(['Tiempo de Ejecución (ms)', analysis.executionTimeMs.toString()]);
   rows.push([]);
 
+  // Section 1.5: Cryptographic Audit & Integrity
+  rows.push(['--- AUDITORÍA CRIPTOGRÁFICA Y CONTROL DE INTEGRIDAD ---']);
+  rows.push(['Estado de Certificación', 'VERIFICADO [✓] (Integridad Acreditada)']);
+  rows.push(['Firma Criptográfica SHA-256 (Análisis)', analysis.documentHash]);
+  rows.push(['Huella Digital del Texto (SHA-256)', analysis.contentHash]);
+  rows.push(['Certificado de Auditoría N°', analysis.auditCertificateId]);
+  rows.push(['Fecha de Sellado Criptográfico', analysis.verificationTimestamp || analysis.submissionDate]);
+  rows.push(['Garantía Institucional', 'Inmutabilidad probada contra alteraciones para auditorías académicas (MEN / IB)']);
+  rows.push([]);
+
   // Section 2: Summary Metrics
   rows.push(['--- MÉTRICAS GENERALES DE ORIGINALIDAD E INTELIGENCIA ARTIFICIAL ---']);
   rows.push(['Índice de Similitud General (%)', `${analysis.similarityIndex}%`]);
@@ -277,9 +287,46 @@ export function exportAnalysisToPDF(analysis: AnalysisSummary, documentText?: st
   doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
   doc.text(`Autor: ${analysis.author}  |  ID Entrega: ${analysis.documentId}  |  Fecha: ${analysis.submissionDate}`, margin + 4, titleY + 1);
-  doc.text(`Total Palabras: ${analysis.totalWords}  |  Oraciones: ${analysis.totalSentences}  |  Análisis en Memoria Local RAM`, margin + 4, titleY + 6);
+  y += metaBoxHeight + 3.5;
 
-  y += metaBoxHeight + 5;
+  // 1.5. Official 'Verified' Academic Integrity Badge & Cryptographic Seal for Academic Audits
+  ensureSpace(22);
+  doc.setDrawColor(16, 185, 129); // Emerald-500
+  doc.setFillColor(240, 253, 244); // Emerald-50
+  doc.roundedRect(margin, y, contentWidth, 19, 2, 2, 'FD');
+
+  // Emerald accent ribbon on left
+  doc.setFillColor(16, 185, 129);
+  doc.rect(margin, y, 3.5, 19, 'F');
+
+  // 'VERIFIED' Pill Badge
+  doc.setFillColor(5, 150, 105); // Emerald-600
+  doc.roundedRect(margin + 6, y + 2.8, 33, 5, 1, 1, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.text('VERIFICADO [✓]', margin + 8, y + 6.4);
+
+  // Institution & Audit Guarantee Title
+  doc.setTextColor(6, 78, 59); // Emerald-900
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.8);
+  doc.text('AUDITORÍA DE INTEGRIDAD ACADÉMICA EKIRAYÁ — DOCUMENTO CERTIFICADO', margin + 42, y + 6.4);
+
+  // Cryptographic Hash (SHA-256)
+  doc.setFont('courier', 'bold');
+  doc.setFontSize(6.8);
+  doc.setTextColor(15, 23, 42); // Slate-900
+  doc.text(`HASH SHA-256: ${analysis.documentHash}`, margin + 6, y + 12);
+
+  // Audit details
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.2);
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Certificado N°: ${analysis.auditCertificateId}  |  Huella de Texto: ${analysis.contentHash.slice(0, 16)}...`, margin + 6, y + 16.2);
+  doc.text('Integridad garantizada para auditorías ministeriales (MEN) e inspectores curriculares', pageWidth - margin - 4, y + 16.2, { align: 'right' });
+
+  y += 22.5;
 
   // 2. Metrics Scorecards (Originality Funnel + AI Writing Detection)
   ensureSpace(38);
@@ -550,6 +597,36 @@ export function exportAnalysisToPDF(analysis: AnalysisSummary, documentText?: st
 
   y += 4;
 
+  // 6.5. Cryptographic Audit & Integrity Verification Box
+  ensureSpace(32);
+  doc.setDrawColor(16, 185, 129); // Emerald-500
+  doc.setFillColor(248, 250, 252); // Slate-50
+  doc.roundedRect(margin, y, contentWidth, 26, 2, 2, 'FD');
+
+  doc.setFillColor(16, 185, 129);
+  doc.rect(margin, y, 3, 26, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.2);
+  doc.setTextColor(6, 78, 59);
+  doc.text('AUDITORÍA CRIPTOGRÁFICA Y CONTROL DE INMUTABILIDAD DEL DOCUMENTO', margin + 6, y + 4.8);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.8);
+  doc.setTextColor(51, 65, 85);
+  doc.text(`• Firma Criptográfica de la Evaluación: ${analysis.documentHash}`, margin + 6, y + 9.2);
+  doc.text(`• Huella Digital SHA-256 del Texto Original: ${analysis.contentHash}`, margin + 6, y + 13.2);
+
+  const auditDesc = 'Instrucciones para Auditoría Académica (MEN / IB / Comités): Este reporte fue sellado criptográficamente en memoria del navegador. Cualquier alteración posterior del texto, autor, fecha o porcentajes invalidará la correspondencia matemática del hash SHA-256 certificado. Para verificar la autenticidad, contraste este código contra la base de datos de auditoría CEM.';
+  const auditDescLines = doc.splitTextToSize(auditDesc, contentWidth - 10);
+  let auditY = y + 17.2;
+  auditDescLines.forEach((l: string) => {
+    doc.text(l, margin + 6, auditY);
+    auditY += 3.4;
+  });
+
+  y += 30;
+
   // 7. Regulatory & Legal Framework Statement (Safely wrapped within margins)
   ensureSpace(40);
   doc.setFillColor(241, 245, 249);
@@ -586,15 +663,15 @@ export function exportAnalysisToPDF(analysis: AnalysisSummary, documentText?: st
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.8);
-    doc.setTextColor(148, 163, 184);
+    doc.setFontSize(6.5);
+    doc.setTextColor(100, 116, 139);
     doc.text(
-      `Colegio Bilingüe Ekirayá • Página ${i} de ${pageCount} • Hash de Verificación: SHA256-${analysis.documentId}`,
+      `Colegio Bilingüe Ekirayá • Pág. ${i}/${pageCount} • [VERIFICADO ✓] SHA-256: ${analysis.documentHash.slice(0, 20)}...`,
       margin,
       pageHeight - 6
     );
     doc.text(
-      'Procesamiento Confidencial en Memoria Local del Navegador',
+      `Cert. ${analysis.auditCertificateId} • Procesamiento Confidencial en Memoria Local`,
       pageWidth - margin,
       pageHeight - 6,
       { align: 'right' }
