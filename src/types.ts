@@ -2,6 +2,8 @@ export type FunnelColor = 'blue' | 'green' | 'yellow' | 'orange' | 'red';
 
 export type SupportedLanguage = 'es' | 'en' | 'fr';
 
+export type SimilarityMatchType = 'exact' | 'paraphrase' | 'semantic';
+
 export interface SourceMatch {
   id: number;
   sourceTitle: string;
@@ -13,6 +15,11 @@ export interface SourceMatch {
   matchedWords: number;
   color: string; // Hex color for the source highlight badge (e.g., red, navy, teal, orange, etc.)
   sampleExcerpt: string;
+  accessDate?: string;
+  exactMatchesCount?: number;
+  paraphraseMatchesCount?: number;
+  semanticMatchesCount?: number;
+  maxSegmentScore?: number;
 }
 
 export interface MatchedSegment {
@@ -26,6 +33,12 @@ export interface MatchedSegment {
   isQuote: boolean;
   isBibliography: boolean;
   wordCount: number;
+  matchType?: SimilarityMatchType;
+  sourceExcerpt?: string;
+  sourceUrl?: string;
+  paragraphIndex?: number;
+  sentenceIndex?: number;
+  verificationStatus?: 'verified' | 'suspected' | 'reviewed';
 }
 
 export interface AISentenceAnalysis {
@@ -44,6 +57,7 @@ export interface AnalysisFilters {
   excludeQuotes: boolean;
   excludeBibliography: boolean;
   minWordCountThreshold: number; // default e.g. 8 words
+  excludeCommonPhrases?: boolean;
 }
 
 export interface AnalysisSummary {
@@ -60,12 +74,19 @@ export interface AnalysisSummary {
   languageLabel: string;
   
   // Similarity Metrics (Institutional Scale)
-  similarityIndex: number; // 0 to 100
+  similarityIndex: number; // 0 to 100 (net similarity after applied filters)
+  grossSimilarityIndex?: number; // 0 to 100 (raw similarity before exclusions)
+  netSimilarityIndex?: number;
+  exactMatchPercentage?: number;
+  paraphrasePercentage?: number;
+  semanticPercentage?: number;
+  highestSingleSourcePercentage?: number;
   similarityColor: FunnelColor;
   similarityFunnelLabel: string;
   matchedWordsTotal: number;
   sources: SourceMatch[];
   matchedSegments: MatchedSegment[];
+  similarityMethodology?: string;
 
   // AI Detection Metrics
   aiWritingIndex: number; // 0 to 100

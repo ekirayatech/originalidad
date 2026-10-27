@@ -482,24 +482,41 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
         {selectedSegment && activeSource && (
           <div className="sticky bottom-3 sm:bottom-4 mt-6 sm:mt-8 bg-slate-900 text-white rounded-xl p-3 sm:p-4 shadow-2xl border border-slate-700 max-h-[60vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <span
-                  className="w-6 h-6 rounded-md flex items-center justify-center font-bold text-xs text-white shadow-xs"
+                  className="w-6 h-6 rounded-md flex items-center justify-center font-bold text-xs text-white shadow-xs shrink-0"
                   style={{ backgroundColor: activeSource.color }}
                 >
                   #{activeSource.id}
                 </span>
                 <div>
-                  <h4 className="font-bold text-sm text-white">{activeSource.sourceTitle}</h4>
-                  <p className="text-xs text-slate-300">
-                    {activeSource.sourceAuthor} {activeSource.publicationYear ? `(${activeSource.publicationYear})` : ''}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-bold text-sm text-white">{activeSource.sourceTitle}</h4>
+                    {selectedSegment.matchType === 'exact' && (
+                      <span className="bg-sky-500/20 text-sky-300 border border-sky-400/30 text-[10px] font-bold px-1.5 py-0.2 rounded">
+                        Coincidencia Exacta
+                      </span>
+                    )}
+                    {selectedSegment.matchType === 'paraphrase' && (
+                      <span className="bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[10px] font-bold px-1.5 py-0.2 rounded">
+                        Paráfrasis Detectada
+                      </span>
+                    )}
+                    {selectedSegment.matchType === 'semantic' && (
+                      <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold px-1.5 py-0.2 rounded">
+                        Similitud Semántica
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    {activeSource.sourceAuthor} {activeSource.publicationYear ? `(${activeSource.publicationYear})` : ''} • {activeSource.sourceUrl || activeSource.sourceType}
                   </p>
                 </div>
               </div>
 
               <button
                 onClick={() => setSelectedSegment(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800"
+                className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -509,23 +526,25 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs bg-slate-950 p-3 rounded-lg border border-slate-800">
               <div>
                 <span className="font-semibold text-amber-400 uppercase text-[10px] tracking-wider block mb-1">
-                  Texto del Estudiante:
+                  Texto Analizado (Párrafo {selectedSegment.paragraphIndex || '1'} • Oración #{selectedSegment.sentenceIndex || '1'}):
                 </span>
                 <p className="text-slate-200 italic line-clamp-3">"{selectedSegment.text}"</p>
               </div>
 
               <div>
                 <span className="font-semibold text-sky-400 uppercase text-[10px] tracking-wider block mb-1">
-                  Fragmento Original en la Fuente ({activeSource.sourceType}):
+                  Fragmento en la Fuente ({activeSource.sourceType}):
                 </span>
-                <p className="text-slate-300 line-clamp-3">"{activeSource.sampleExcerpt}"</p>
+                <p className="text-slate-300 line-clamp-3">
+                  "{selectedSegment.sourceExcerpt || activeSource.sampleExcerpt}"
+                </p>
               </div>
             </div>
 
-            {/* Colombian Law Assessment */}
+            {/* Colombian Law Assessment & Technical Coordinates */}
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs pt-2 border-t border-slate-800">
               <div className="flex items-center gap-2 text-slate-300">
-                <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+                <BookOpen className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span>
                   <strong>Ley 23 de 1982 (Art. 31):</strong>{' '}
                   {selectedSegment.isQuote
@@ -533,8 +552,15 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
                     : 'Coincidencia literal sin comillas. Posible transcripción no citada.'}
                 </span>
               </div>
-              <div className="text-slate-400 font-mono text-[11px]">
-                Coincidencia: <span className="text-emerald-400 font-bold">{selectedSegment.similarityScore}%</span> ({selectedSegment.wordCount} palabras)
+              <div className="flex items-center gap-3 text-slate-400 font-mono text-[11px]">
+                {activeSource.accessDate && (
+                  <span className="text-slate-400 font-sans text-[10px]">
+                    Consultado: {activeSource.accessDate}
+                  </span>
+                )}
+                <span>
+                  Coincidencia: <span className="text-emerald-400 font-bold">{selectedSegment.similarityScore}%</span> ({selectedSegment.wordCount} palabras)
+                </span>
               </div>
             </div>
           </div>

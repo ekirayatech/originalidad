@@ -78,7 +78,8 @@ export default function App() {
   const [filters, setFilters] = useState<AnalysisFilters>({
     excludeQuotes: false,
     excludeBibliography: true,
-    minWordCountThreshold: 8
+    minWordCountThreshold: 8,
+    excludeCommonPhrases: false
   });
 
   // Active view tab in analysis mode: 'report' | 'ai_diagnostics' | 'citations'
@@ -553,6 +554,11 @@ export default function App() {
                   }}
                   filters={filters}
                   onUpdateFilters={handleUpdateFilters}
+                  grossSimilarityIndex={analysis.grossSimilarityIndex}
+                  exactMatchPercentage={analysis.exactMatchPercentage}
+                  paraphrasePercentage={analysis.paraphrasePercentage}
+                  semanticPercentage={analysis.semanticPercentage}
+                  similarityMethodology={analysis.similarityMethodology}
                 />
               </div>
             </div>

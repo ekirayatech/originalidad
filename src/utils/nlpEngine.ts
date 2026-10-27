@@ -11,6 +11,7 @@ import {
 import { EKIRAYA_SOURCE_COLORS } from '../data/defaultCorpus';
 import { generateAuditRecord } from './cryptoAudit';
 import { analyzeDocumentCitations } from './citationEngine';
+import { executeSimilarityEngine } from './similarityEngine';
 
 // =========================================================================
 // TRILINGUAL AI / LLM RHETORICAL FORMULAS & DISCOURSE CONNECTORS
@@ -502,141 +503,32 @@ export function runOriginalityAnalysis(
   const quoteSpans = detectQuotes(documentText);
   const bibliographyStart = detectBibliographyStart(documentText);
 
-  // Pre-tokenize corpus documents for speed (exclude the document itself to avoid self-match)
-  const normalizedCurrentText = documentText.trim().toLowerCase();
-  const preprocessedCorpus = corpus
-    .filter((doc) => {
-      const docLower = doc.content.trim().toLowerCase();
-      // Skip if it's the exact same content as the document currently being evaluated
-      if (docLower === normalizedCurrentText) return false;
-      // Skip if same title and author and nearly identical content length
-      if (
-        doc.title.trim().toLowerCase() === title.trim().toLowerCase() &&
-        Math.abs(doc.content.length - documentText.length) < 20 &&
-        docLower.slice(0, 100) === normalizedCurrentText.slice(0, 100)
-      ) {
-        return false;
-      }
-      return true;
-    })
-    .map((doc) => ({
-      doc,
-      tokens: cleanTokens(doc.content),
-      lowerContent: doc.content.toLowerCase()
-    }));
+  // Execute multi-technique Similarity & Originality Engine (Veritas Academic)
+  const simResult = executeSimilarityEngine(
+    documentText,
+    title,
+    author,
+    sentences,
+    corpus,
+    filters,
+    quoteSpans,
+    bibliographyStart
+  );
 
-  const matchedSegments: MatchedSegment[] = [];
-  const sourceStatsMap = new Map<string, { count: number; words: number; sampleExcerpt: string }>();
+  const {
+    similarityIndex,
+    grossSimilarityIndex,
+    netSimilarityIndex,
+    exactMatchPercentage,
+    paraphrasePercentage,
+    semanticPercentage,
+    highestSingleSourcePercentage,
+    matchedWordsTotal,
+    sources,
+    matchedSegments,
+    methodology: similarityMethodology
+  } = simResult;
 
-  // Process similarity by analyzing sentence chunks and sliding sequences
-  sentences.forEach((s, idx) => {
-    const sTokens = cleanTokens(s.text);
-    if (sTokens.length === 0) return;
-
-    // Check if within quotes
-    const isQuote = quoteSpans.some(
-      (q) => (s.startIndex >= q.start && s.startIndex <= q.end) || (s.endIndex >= q.start && s.endIndex <= q.end)
-    );
-
-    // Check if in bibliography
-    const isBibliography = bibliographyStart !== -1 && s.startIndex >= bibliographyStart;
-
-    // Search for best matching source in the reference corpus
-    let bestMatchDoc: ReferenceDocument | null = null;
-    let highestOverlap = 0;
-    let matchingSnippet = '';
-
-    for (const item of preprocessedCorpus) {
-      const overlap = computeNGramMatches(sTokens, item.tokens, 4);
-      if (overlap > highestOverlap) {
-        highestOverlap = overlap;
-        bestMatchDoc = item.doc;
-        // Find approximate matching snippet from source
-        const firstWords = sTokens.slice(0, 4).join(' ');
-        const indexInDoc = item.lowerContent.indexOf(firstWords);
-        if (indexInDoc !== -1) {
-          matchingSnippet = item.doc.content.substring(Math.max(0, indexInDoc - 10), indexInDoc + 180) + '...';
-        } else {
-          matchingSnippet = item.doc.content.substring(0, 180) + '...';
-        }
-      }
-    }
-
-    // Similarity threshold: 0.32 (32% shingle match or more)
-    if (highestOverlap >= 0.32 && bestMatchDoc) {
-      const sentenceWordCount = sTokens.length;
-
-      // Check if filtered out
-      const excludedByQuote = filters.excludeQuotes && isQuote;
-      const excludedByBib = filters.excludeBibliography && isBibliography;
-      const excludedByMinWords = sentenceWordCount < filters.minWordCountThreshold;
-
-      if (!excludedByQuote && !excludedByBib && !excludedByMinWords) {
-        matchedSegments.push({
-          id: `match-${idx}`,
-          startIndex: s.startIndex,
-          endIndex: s.endIndex,
-          text: s.text,
-          sourceId: 0, // will assign source id below
-          sourceTitle: bestMatchDoc.title,
-          similarityScore: Math.round(highestOverlap * 100),
-          isQuote,
-          isBibliography,
-          wordCount: sentenceWordCount
-        });
-
-        // Record source stats
-        const key = bestMatchDoc.id;
-        const current = sourceStatsMap.get(key) || {
-          count: 0,
-          words: 0,
-          sampleExcerpt: matchingSnippet || bestMatchDoc.content.slice(0, 150)
-        };
-        current.count += 1;
-        current.words += sentenceWordCount;
-        sourceStatsMap.set(key, current);
-      }
-    }
-  });
-
-  // Calculate sources and assign colors
-  const sources: SourceMatch[] = [];
-  let sourceIndexCounter = 1;
-
-  Array.from(sourceStatsMap.entries())
-    .sort((a, b) => b[1].words - a[1].words)
-    .forEach(([docId, stats]) => {
-      const foundDoc = corpus.find((d) => d.id === docId);
-      if (!foundDoc) return;
-
-      const sourceId = sourceIndexCounter++;
-      const sourcePercentage = totalWords > 0 ? Math.round((stats.words / totalWords) * 100) : 0;
-      const color = EKIRAYA_SOURCE_COLORS[(sourceId - 1) % EKIRAYA_SOURCE_COLORS.length];
-
-      sources.push({
-        id: sourceId,
-        sourceTitle: foundDoc.title,
-        sourceAuthor: foundDoc.author,
-        sourceType: foundDoc.type,
-        publicationYear: foundDoc.year,
-        sourceUrl: foundDoc.institutionOrJournal,
-        percentage: Math.max(1, sourcePercentage),
-        matchedWords: stats.words,
-        color,
-        sampleExcerpt: stats.sampleExcerpt
-      });
-
-      // Update sourceId in matched segments
-      matchedSegments.forEach((seg) => {
-        if (seg.sourceTitle === foundDoc.title) {
-          seg.sourceId = sourceId;
-        }
-      });
-    });
-
-  // Calculate Overall Similarity Index %
-  const matchedWordsTotal = matchedSegments.reduce((acc, seg) => acc + seg.wordCount, 0);
-  const similarityIndex = totalWords > 0 ? Math.min(100, Math.round((matchedWordsTotal / totalWords) * 100)) : 0;
   const { color: similarityColor, label: similarityFunnelLabel } = getOriginalityFunnelColor(similarityIndex);
 
   // --- DOCUMENT-LEVEL ANALYSIS FOR AI DETECTION ---
@@ -769,6 +661,13 @@ export function runOriginalityAnalysis(
     totalCharacters,
     totalSentences,
     similarityIndex,
+    grossSimilarityIndex,
+    netSimilarityIndex,
+    exactMatchPercentage,
+    paraphrasePercentage,
+    semanticPercentage,
+    highestSingleSourcePercentage,
+    similarityMethodology,
     similarityColor,
     similarityFunnelLabel,
     matchedWordsTotal,
