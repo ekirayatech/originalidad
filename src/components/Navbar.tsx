@@ -139,20 +139,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Subir Documento</span>
           </button>
 
-          {/* User Management Button */}
-          <button
-            onClick={onOpenUsersModal}
-            className="flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-950/80 hover:bg-indigo-900 active:scale-95 text-indigo-200 border border-indigo-700 shadow-xs transition-all cursor-pointer"
-            title="Gestión de Usuarios (Docentes y Estudiantes con Taller, Contraseña y Carga Masiva CSV)"
-          >
-            <Users className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-            <span>Usuarios</span>
-            {usersCount > 0 && (
-              <span className="bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
-                {usersCount}
-              </span>
-            )}
-          </button>
+          {/* User Management Button - ONLY visible to Administrators */}
+          {isAdmin && (
+            <button
+              onClick={onOpenUsersModal}
+              className="flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-950/80 hover:bg-indigo-900 active:scale-95 text-indigo-200 border border-indigo-700 shadow-xs transition-all cursor-pointer"
+              title="Gestión de Usuarios (Docentes y Estudiantes con Taller, Contraseña y Carga Masiva CSV)"
+            >
+              <Users className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span>Usuarios</span>
+              {usersCount > 0 && (
+                <span className="bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">
+                  {usersCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Admin Management Button - ONLY visible to Administrators */}
           {isAdmin && (

@@ -204,45 +204,7 @@ export default function App() {
     return runOriginalityAnalysis(content, title, author, corpus, filters);
   }, [content, title, author, corpus, filters]);
 
-  // AUTOMATIC ARCHIVE & COTEJO REPOSITORY
-  // "una vez haga la revisión de documentos, los almacene para ser la de la base de datos y sean cotejados en próximos usos o revisiones"
-  useEffect(() => {
-    if (!analysis || !user || !content.trim()) return;
 
-    const currentKey = `${analysis.title}__${analysis.totalWords}__${analysis.similarityIndex}__${content.slice(0, 150)}`;
-    if (lastIndexedKeyRef.current === currentKey) return;
-
-    let isSubscribed = true;
-
-    const performAutoArchive = async () => {
-      try {
-        setIsSavingToFirebase(true);
-        await autoIndexAnalyzedDocument(analysis, content);
-        if (isSubscribed) {
-          lastIndexedKeyRef.current = currentKey;
-          setIsSavedToFirebase(true);
-          const roleLabel = userProfile?.role === 'student' ? 'Estudiante CEM' : 'Docente CEM';
-          setAutoIndexMessage(`Documento indexado automáticamente en la Base de Datos de Cotejo CEM (${roleLabel})`);
-          setTimeout(() => {
-            if (isSubscribed) setAutoIndexMessage(null);
-          }, 6000);
-        }
-      } catch (err) {
-        console.error('Error durante indexación automática en Firestore:', err);
-      } finally {
-        if (isSubscribed) {
-          setIsSavingToFirebase(false);
-        }
-      }
-    };
-
-    const timer = setTimeout(performAutoArchive, 700);
-
-    return () => {
-      isSubscribed = false;
-      clearTimeout(timer);
-    };
-  }, [analysis, user, content, userProfile]);
 
   // Handler to update filters
   const handleUpdateFilters = (newFilters: Partial<AnalysisFilters>) => {
