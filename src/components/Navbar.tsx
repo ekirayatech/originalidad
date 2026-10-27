@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { AnalysisSummary } from '../types';
 import { EKIRAYA_CONFIG } from '../data/ekirayaConfig';
+import { EkirayaLogo } from './EkirayaLogo';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
@@ -96,20 +97,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Logo and Brand */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Logo container */}
-          <div className="bg-white p-1 rounded-xl flex items-center justify-center shadow-md ring-1 ring-white/20 shrink-0 h-10 sm:h-12 w-auto max-w-[120px] sm:max-w-[140px] px-1.5 sm:px-2 overflow-hidden">
-            {!logoFailed ? (
-              <img
-                src={EKIRAYA_CONFIG.logoUrl}
-                alt="Logo Institucional Colegio Bilingüe Ekirayá"
-                className="h-full w-auto max-h-8 sm:max-h-10 object-contain hover:scale-105 transition-transform duration-200"
-                referrerPolicy="no-referrer"
-                onError={() => setLogoFailed(true)}
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center font-black text-amber-400 text-base sm:text-lg">
-                E
-              </div>
-            )}
+          <div className="bg-white p-1 rounded-xl flex items-center justify-center shadow-md ring-1 ring-white/20 shrink-0 h-10 sm:h-12 px-1.5 sm:px-2 overflow-hidden">
+            <EkirayaLogo className="h-8 sm:h-10 w-auto" />
           </div>
 
           <div className="leading-tight min-w-0">
