@@ -4,6 +4,7 @@ import { ColorFunnel } from './components/ColorFunnel';
 import { ReportViewer } from './components/ReportViewer';
 import { SourcesPanel } from './components/SourcesPanel';
 import { AIDetectionPanel } from './components/AIDetectionPanel';
+import { CitationsPanel } from './components/CitationsPanel';
 import { DocumentEditor } from './components/DocumentEditor';
 import { LegalComplianceModal } from './components/LegalComplianceModal';
 import { UserManagementModal } from './components/UserManagementModal';
@@ -45,7 +46,8 @@ import {
   ShieldCheck,
   Database,
   LogIn,
-  Users
+  Users,
+  BookmarkCheck
 } from 'lucide-react';
 
 export default function App() {
@@ -79,8 +81,8 @@ export default function App() {
     minWordCountThreshold: 8
   });
 
-  // Active view tab in analysis mode: 'report' | 'ai_diagnostics'
-  const [activeTab, setActiveTab] = useState<'report' | 'ai_diagnostics'>('report');
+  // Active view tab in analysis mode: 'report' | 'ai_diagnostics' | 'citations'
+  const [activeTab, setActiveTab] = useState<'report' | 'ai_diagnostics' | 'citations'>('report');
 
   // Mobile sub-tab for report view on screens < lg ('document' | 'sources')
   const [mobileReportTab, setMobileReportTab] = useState<'document' | 'sources'>('document');
@@ -427,6 +429,21 @@ export default function App() {
                     {analysis.aiWritingIndex}%
                   </span>
                 </button>
+
+                <button
+                  onClick={() => setActiveTab('citations')}
+                  className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-all cursor-pointer ${
+                    activeTab === 'citations'
+                      ? 'border-emerald-600 text-emerald-700'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <BookmarkCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Referencias y Citas</span>
+                  <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-mono font-bold">
+                    {analysis.citationAnalysis?.totalReferencesFound || 0}
+                  </span>
+                </button>
               </div>
 
               <div className="hidden md:flex items-center gap-2 text-xs text-slate-500 shrink-0">
@@ -539,7 +556,7 @@ export default function App() {
                 />
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'ai_diagnostics' ? (
             /* View Tab 2: AI Writing Diagnostics Panel */
             <div className="flex-1 p-3 sm:p-6 bg-slate-50">
               <AIDetectionPanel
@@ -548,6 +565,13 @@ export default function App() {
                   setTargetSentenceId(sentenceId);
                   setActiveTab('report');
                 }}
+              />
+            </div>
+          ) : (
+            /* View Tab 3: Citations & Bibliography Verification */
+            <div className="flex-1 p-3 sm:p-6 bg-slate-50">
+              <CitationsPanel
+                citationAnalysis={analysis.citationAnalysis}
               />
             </div>
           )}

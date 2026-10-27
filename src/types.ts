@@ -85,6 +85,44 @@ export interface AnalysisSummary {
   verificationTimestamp: string; // Timestamp when hash was certified
   isVerified: boolean; // Integrity verification status for academic audits
   auditCertificateId: string; // Unique institutional audit ID
+
+  // Citation & Reference Verification (APA / Standard Academic Verification)
+  citationAnalysis?: CitationAnalysisSummary;
+}
+
+export interface BibliographicReference {
+  id: string;
+  rawText: string;
+  authorLabel: string;
+  year?: string;
+  titleSnippet?: string;
+  doiOrUrl?: string;
+  citationCountInText: number;
+  isOrphan: boolean;
+  status: 'verified' | 'orphan' | 'incomplete';
+}
+
+export interface InTextCitation {
+  id: string;
+  rawText: string;
+  authorKey: string;
+  year?: string;
+  startIndex: number;
+  endIndex: number;
+  hasMatchingReference: boolean;
+  citationType: 'parenthetical' | 'narrative' | 'numeric';
+}
+
+export interface CitationAnalysisSummary {
+  totalReferencesFound: number;
+  totalInTextCitationsFound: number;
+  matchedCitationsCount: number;
+  orphanReferencesCount: number;
+  unreferencedCitationsCount: number;
+  detectedStyle: 'APA / Autor-Año' | 'IEEE / Numérico' | 'Estándar Académico';
+  citationHealthScore: number;
+  references: BibliographicReference[];
+  inTextCitations: InTextCitation[];
 }
 
 export interface ReferenceDocument {

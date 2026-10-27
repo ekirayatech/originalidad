@@ -10,6 +10,7 @@ import {
 } from '../types';
 import { EKIRAYA_SOURCE_COLORS } from '../data/defaultCorpus';
 import { generateAuditRecord } from './cryptoAudit';
+import { analyzeDocumentCitations } from './citationEngine';
 
 // =========================================================================
 // TRILINGUAL AI / LLM RHETORICAL FORMULAS & DISCOURSE CONNECTORS
@@ -756,6 +757,9 @@ export function runOriginalityAnalysis(
     submissionDate: submissionDateFormatted
   });
 
+  // Extract and verify bibliographic references & in-text citations
+  const citationAnalysis = analyzeDocumentCitations(documentText);
+
   return {
     documentId: `DOC-${Date.now().toString().slice(-6)}`,
     title: title.trim() || 'Documento sin título',
@@ -786,7 +790,10 @@ export function runOriginalityAnalysis(
     contentHash: auditRecord.contentHash,
     verificationTimestamp: auditRecord.verificationTimestamp,
     isVerified: auditRecord.isVerified,
-    auditCertificateId: auditRecord.auditCertificateId
+    auditCertificateId: auditRecord.auditCertificateId,
+
+    // Citations & References
+    citationAnalysis
   };
 }
 
