@@ -50,6 +50,7 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [confirmPurgeAllMode, setConfirmPurgeAllMode] = useState(false);
 
   const activeUid = user?.uid || institutionalUser?.id || 'guest';
   const isTeacher = isAdmin || userProfile?.role === 'teacher' || institutionalUser?.rol === 'docente' || institutionalUser?.rol === 'admin';
@@ -131,8 +132,6 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
       alert('No se pudo eliminar el registro.');
     }
   };
-
-  const [confirmPurgeAllMode, setConfirmPurgeAllMode] = useState(false);
 
   const handlePurgeAll = async () => {
     setIsPurging(true);
