@@ -52,6 +52,7 @@ export const ReportViewer: React.FC<ReportViewerProps> = ({
   const [activeLayer, setActiveLayer] = useState<LayerMode>('all');
   const [selectedSegment, setSelectedSegment] = useState<MatchedSegment | null>(null);
   const [selectedAISentence, setSelectedAISentence] = useState<AISentenceAnalysis | null>(null);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   // Auto-select target sentence if passed from AI diagnostics panel
   useEffect(() => {

@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import { AnalysisSummary, AISentenceAnalysis } from '../types';
 import { LEGAL_REGULATIONS } from './legalGuidelines';
+import { EKIRAYA_CONFIG } from '../data/ekirayaConfig';
 
 export function exportAnalysisToCSV(analysis: AnalysisSummary): void {
   const rows: string[][] = [];
@@ -245,17 +246,25 @@ export function exportAnalysisToPDF(analysis: AnalysisSummary, documentText?: st
     doc.setFillColor(30, 41, 59); // Slate-800
     doc.rect(margin, y, contentWidth, 12, 'F');
 
+    // Logo / Crest Box (Red Emblem with White 'E' for Ekirayá)
+    doc.setFillColor(185, 28, 28); // Red-700
+    doc.roundedRect(margin + 2.5, y + 2, 8, 8, 1, 1, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('COLEGIO BILINGÜE EKIRAYÁ — REPORTE DE ORIGINALIDAD E IA', margin + 4, y + 8);
+    doc.setFontSize(8.5);
+    doc.text('E', margin + 5.8, y + 7.8);
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.text(`${EKIRAYA_CONFIG.institutionName} — REPORTE OFICIAL`, margin + 12, y + 7.8);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.text(
-      isContinuation ? '(Continuación)' : 'ESTÁNDAR INSTITUCIONAL EKIRAYÁ',
+      isContinuation ? '(Continuación)' : 'ESTÁNDAR INSTITUCIONAL',
       pageWidth - margin - 4,
-      y + 8,
+      y + 7.8,
       { align: 'right' }
     );
 
