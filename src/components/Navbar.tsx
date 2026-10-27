@@ -129,15 +129,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Desktop Action Controls (hidden on md and down, visible on lg) */}
         <div className="hidden lg:flex items-center gap-2 shrink-0">
-          {/* Direct Upload Document Button */}
-          <button
-            onClick={onOpenUploadModal}
-            className="flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-500 active:scale-95 text-white shadow-xs transition-all cursor-pointer"
-            title="Subir archivo PDF, Word (.docx) o Texto (.txt) para análisis instantáneo"
-          >
-            <UploadCloud className="w-4 h-4" />
-            <span>Subir Documento</span>
-          </button>
+          {/* Direct Upload Document Button (Only visible after login) */}
+          {activeUser && (
+            <button
+              onClick={onOpenUploadModal}
+              className="flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-500 active:scale-95 text-white shadow-xs transition-all cursor-pointer"
+              title="Subir archivo PDF, Word (.docx) o Texto (.txt) para análisis instantáneo"
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span>Subir Documento</span>
+            </button>
+          )}
 
           {/* User Management Button - ONLY visible to Administrators */}
           {isAdmin && (
@@ -248,15 +250,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Compact Right Area for Mobile & Tablet + User Menu */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Quick Upload CTA on Mobile/Tablet */}
-          <button
-            onClick={onOpenUploadModal}
-            className="lg:hidden flex items-center justify-center min-h-[40px] min-w-[40px] px-2.5 py-1.5 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-500 active:scale-95 text-white shadow-xs transition-all cursor-pointer"
-            title="Subir archivo"
-          >
-            <UploadCloud className="w-4 h-4" />
-            <span className="hidden xs:inline ml-1 font-bold">Subir</span>
-          </button>
+          {/* Quick Upload CTA on Mobile/Tablet (Only visible after login) */}
+          {activeUser && (
+            <button
+              onClick={onOpenUploadModal}
+              className="lg:hidden flex items-center justify-center min-h-[40px] min-w-[40px] px-2.5 py-1.5 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-500 active:scale-95 text-white shadow-xs transition-all cursor-pointer"
+              title="Subir archivo"
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span className="hidden xs:inline ml-1 font-bold">Subir</span>
+            </button>
+          )}
 
           {/* User Profile / Firebase Auth Area */}
           <div className="relative" ref={userMenuRef}>
@@ -527,16 +531,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Action List with Touch Ergonomics (>= 44px min height) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-            <button
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                onOpenUploadModal();
-              }}
-              className="flex items-center gap-3 min-h-[46px] px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-colors cursor-pointer"
-            >
-              <UploadCloud className="w-4 h-4 shrink-0" />
-              <span>Subir Archivo (PDF, DOCX, TXT)</span>
-            </button>
+            {activeUser && (
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onOpenUploadModal();
+                }}
+                className="flex items-center gap-3 min-h-[46px] px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-colors cursor-pointer"
+              >
+                <UploadCloud className="w-4 h-4 shrink-0" />
+                <span>Subir Archivo (PDF, DOCX, TXT)</span>
+              </button>
+            )}
 
             <button
               onClick={() => {
@@ -558,23 +564,25 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </button>
 
-            <button
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                onOpenUsersModal();
-              }}
-              className="flex items-center justify-between min-h-[46px] px-3.5 py-2 rounded-xl bg-indigo-950/70 hover:bg-indigo-900 text-indigo-200 text-xs font-semibold border border-indigo-800/80 transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <Users className="w-4 h-4 text-indigo-400 shrink-0" />
-                <span>Gestión de Usuarios</span>
-              </div>
-              {usersCount > 0 && (
-                <span className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  {usersCount}
-                </span>
-              )}
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onOpenUsersModal();
+                }}
+                className="flex items-center justify-between min-h-[46px] px-3.5 py-2 rounded-xl bg-indigo-950/70 hover:bg-indigo-900 text-indigo-200 text-xs font-semibold border border-indigo-800/80 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <Users className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span>Gestión de Usuarios</span>
+                </div>
+                {usersCount > 0 && (
+                  <span className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    {usersCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {isAdmin && (
               <button

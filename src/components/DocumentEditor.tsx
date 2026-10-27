@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { extractTextFromFile } from '../utils/documentParser';
 import { detectLanguage } from '../utils/nlpEngine';
+import { useAuth } from '../context/AuthContext';
 
 interface DocumentEditorProps {
   title: string;
@@ -26,6 +27,7 @@ interface DocumentEditorProps {
   onContentChange: (val: string) => void;
   onRunAnalysis: () => void;
   onOpenCommunityModal?: () => void;
+  onOpenLoginModal?: () => void;
 }
 
 export const DocumentEditor: React.FC<DocumentEditorProps> = ({
@@ -36,8 +38,12 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   onAuthorChange,
   onContentChange,
   onRunAnalysis,
-  onOpenCommunityModal
+  onOpenCommunityModal,
+  onOpenLoginModal
 }) => {
+  const { user, institutionalUser } = useAuth();
+  const isLoggedIn = Boolean(user || institutionalUser);
+
   const [isDragging, setIsDragging] = useState(false);
   const [isReadingFile, setIsReadingFile] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -148,7 +154,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
-              Subir o Escribir Documento para Análisis
+              {isLoggedIn ? 'Subir o Escribir Documento para Análisis' : 'Escribir o Pegar Documento para Análisis'}
             </h2>
             <p className="text-xs text-slate-500 mt-1">
               Procesamiento <strong>100% en la memoria de su navegador (RAM)</strong>. Conforme a la Ley 23 de 1982, Habeas Data (Ley 1581) y directrices del MEN. Soporta español, inglés y francés.
@@ -180,101 +186,128 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           </div>
         </div>
 
-        {/* Big File Upload Drag-and-Drop Area */}
-        <div className="mt-5">
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={handleFileDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-2xl p-4 sm:p-8 transition-all cursor-pointer ${
-              isDragging
-                ? 'border-red-500 bg-red-50/60 scale-[1.005]'
-                : 'border-slate-300 hover:border-red-400 bg-slate-50/70 hover:bg-slate-50'
-            }`}
-          >
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4 text-center sm:text-left">
-                <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 shadow-xs">
-                  {isReadingFile ? (
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                  ) : (
-                    <UploadCloud className="w-6 h-6" />
-                  )}
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900">
-                    {isReadingFile
-                      ? 'Extrayendo texto del archivo en memoria...'
-                      : 'Haz clic aquí o arrastra tu archivo (PDF, Word o Texto)'}
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Se procesará de forma inmediata y privada en tu navegador
-                  </p>
-                  <div className="flex flex-wrap items-center gap-1.5 mt-2 justify-center sm:justify-start">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
-                      PDF (.pdf)
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
-                      WORD (.docx, .doc)
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
-                      TEXTO (.txt, .md, .rtf)
-                    </span>
+        {/* Big File Upload Drag-and-Drop Area - Only for logged in users */}
+        {isLoggedIn ? (
+          <div className="mt-5">
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleFileDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-2xl p-4 sm:p-8 transition-all cursor-pointer ${
+                isDragging
+                  ? 'border-red-500 bg-red-50/60 scale-[1.005]'
+                  : 'border-slate-300 hover:border-red-400 bg-slate-50/70 hover:bg-slate-50'
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4 text-center sm:text-left">
+                  <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 shadow-xs">
+                    {isReadingFile ? (
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    ) : (
+                      <UploadCloud className="w-6 h-6" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900">
+                      {isReadingFile
+                        ? 'Extrayendo texto del archivo en memoria...'
+                        : 'Haz clic aquí o arrastra tu archivo (PDF, Word o Texto)'}
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Se procesará de forma inmediata y privada en tu navegador
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2 justify-center sm:justify-start">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
+                        PDF (.pdf)
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
+                        WORD (.docx, .doc)
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
+                        TEXTO (.txt, .md, .rtf)
+                      </span>
+                    </div>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    disabled={isReadingFile}
+                    className="w-full sm:w-auto font-bold text-xs bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer min-h-[42px]"
+                  >
+                    Examinar Archivos
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    fileInputRef.current?.click();
-                  }}
-                  disabled={isReadingFile}
-                  className="w-full sm:w-auto font-bold text-xs bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer min-h-[42px]"
-                >
-                  Examinar Archivos
-                </button>
+              {/* Last Uploaded File Badge */}
+              {lastUploadedFile && (
+                <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-950">
+                  <div className="flex items-center gap-2">
+                    <FileCheck className="w-4 h-4 text-emerald-600" />
+                    <span>
+                      Archivo cargado: <strong>{lastUploadedFile.name}</strong> (
+                      {(lastUploadedFile.size / 1024).toFixed(1)} KB,{' '}
+                      <strong className="text-emerald-800">{lastUploadedFile.wordCount.toLocaleString()} palabras</strong>)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRunAnalysis();
+                    }}
+                    className="font-bold text-emerald-700 hover:text-emerald-900 underline ml-2 cursor-pointer"
+                  >
+                    Analizar ahora →
+                  </button>
+                </div>
+              )}
+
+              {uploadError && (
+                <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs text-rose-800">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="mt-5 p-4 sm:p-5 rounded-2xl border border-slate-200 bg-slate-50/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-slate-200 text-slate-600 flex items-center justify-center shrink-0">
+                <UploadCloud className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-800">
+                  Para subir documentos (.pdf, .docx, .txt), inicia sesión en la plataforma
+                </p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  O escribe / pega tu texto directamente en el recuadro inferior para analizarlo
+                </p>
               </div>
             </div>
-
-            {/* Last Uploaded File Badge */}
-            {lastUploadedFile && (
-              <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-950">
-                <div className="flex items-center gap-2">
-                  <FileCheck className="w-4 h-4 text-emerald-600" />
-                  <span>
-                    Archivo cargado: <strong>{lastUploadedFile.name}</strong> (
-                    {(lastUploadedFile.size / 1024).toFixed(1)} KB,{' '}
-                    <strong className="text-emerald-800">{lastUploadedFile.wordCount.toLocaleString()} palabras</strong>)
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRunAnalysis();
-                  }}
-                  className="font-bold text-emerald-700 hover:text-emerald-900 underline ml-2 cursor-pointer"
-                >
-                  Analizar ahora →
-                </button>
-              </div>
-            )}
-
-            {uploadError && (
-              <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs text-rose-800">
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>{uploadError}</span>
-              </div>
+            {onOpenLoginModal && (
+              <button
+                type="button"
+                onClick={onOpenLoginModal}
+                className="px-4 py-2 bg-sky-600 hover:bg-sky-500 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer shrink-0"
+              >
+                Ingreso Institucional
+              </button>
             )}
           </div>
-        </div>
+        )}
 
         {/* Quick Sample Selector */}
         <div className="mt-5 pt-4 border-t border-slate-100">
