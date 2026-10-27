@@ -10,15 +10,21 @@ import {
   ExternalLink,
   ChevronRight,
   Filter,
-  CheckCircle2
+  CheckCircle2,
+  Cpu
 } from 'lucide-react';
 
 interface AIDetectionPanelProps {
   analysis: AnalysisSummary;
   onNavigateToSentence?: (sentenceId: string) => void;
+  onOpenAdminPanel?: () => void;
 }
 
-export const AIDetectionPanel: React.FC<AIDetectionPanelProps> = ({ analysis, onNavigateToSentence }) => {
+export const AIDetectionPanel: React.FC<AIDetectionPanelProps> = ({
+  analysis,
+  onNavigateToSentence,
+  onOpenAdminPanel
+}) => {
   const [filterMode, setFilterMode] = useState<'all_flagged' | 'high' | 'all'>('all_flagged');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -48,9 +54,21 @@ export const AIDetectionPanel: React.FC<AIDetectionPanelProps> = ({ analysis, on
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-lg text-slate-900">
-              Diagnóstico de Inteligencia Artificial (LLM)
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-lg text-slate-900">
+                Diagnóstico de Inteligencia Artificial (LLM)
+              </h3>
+              {onOpenAdminPanel && (
+                <button
+                  onClick={onOpenAdminPanel}
+                  className="text-[11px] bg-purple-50 text-purple-800 hover:bg-purple-100 border border-purple-200 px-2 py-0.5 rounded-md font-semibold flex items-center gap-1 cursor-pointer"
+                  title="Gestionar proveedores y modelos de detección de IA"
+                >
+                  <Cpu className="w-3 h-3" />
+                  <span>Proveedores de IA</span>
+                </button>
+              )}
+            </div>
             <p className="text-xs text-slate-500">
               Análisis estadístico y estilométrico de modelos de lenguaje (GPT-4, Claude, Gemini)
             </p>
