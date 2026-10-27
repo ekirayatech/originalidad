@@ -15,6 +15,7 @@ import { DocumentRecordsModal } from './components/DocumentRecordsModal';
 import { AdminManagementModal } from './components/AdminManagementModal';
 import { AuditVerificationModal } from './components/AuditVerificationModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
+import { SimilarityProvidersModal } from './components/SimilarityProvidersModal';
 import { DEFAULT_CORPUS } from './data/defaultCorpus';
 import { SAMPLE_DOCUMENTS } from './data/sampleDocuments';
 import { EKIRAYA_CONFIG } from './data/ekirayaConfig';
@@ -107,6 +108,7 @@ export default function App() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [isProvidersModalOpen, setIsProvidersModalOpen] = useState(false);
 
   // Users count from Firestore
   const [institutionalUsersCount, setInstitutionalUsersCount] = useState<number>(0);
@@ -559,6 +561,7 @@ export default function App() {
                   paraphrasePercentage={analysis.paraphrasePercentage}
                   semanticPercentage={analysis.semanticPercentage}
                   similarityMethodology={analysis.similarityMethodology}
+                  onOpenProvidersModal={() => setIsProvidersModalOpen(true)}
                 />
               </div>
             </div>
@@ -674,6 +677,12 @@ export default function App() {
       <ChangePasswordModal
         isOpen={isChangePasswordModalOpen}
         onClose={() => setIsChangePasswordModalOpen(false)}
+      />
+
+      {/* Similarity Engine Providers Administration Modal */}
+      <SimilarityProvidersModal
+        isOpen={isProvidersModalOpen}
+        onClose={() => setIsProvidersModalOpen(false)}
       />
     </div>
   );

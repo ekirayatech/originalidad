@@ -11,7 +11,8 @@ import {
   Layers,
   Sparkles,
   Calendar,
-  CheckCircle2
+  CheckCircle2,
+  Server
 } from 'lucide-react';
 
 interface SourcesPanelProps {
@@ -27,6 +28,7 @@ interface SourcesPanelProps {
   paraphrasePercentage?: number;
   semanticPercentage?: number;
   similarityMethodology?: string;
+  onOpenProvidersModal?: () => void;
 }
 
 export const SourcesPanel: React.FC<SourcesPanelProps> = ({
@@ -41,7 +43,8 @@ export const SourcesPanel: React.FC<SourcesPanelProps> = ({
   exactMatchPercentage = 0,
   paraphrasePercentage = 0,
   semanticPercentage = 0,
-  similarityMethodology
+  similarityMethodology,
+  onOpenProvidersModal
 }) => {
   const [showMethodology, setShowMethodology] = useState(false);
 
@@ -83,6 +86,16 @@ export const SourcesPanel: React.FC<SourcesPanelProps> = ({
             <h3 className="font-bold text-sm text-slate-900">Motor de Similitud</h3>
           </div>
           <div className="flex items-center gap-1.5">
+            {onOpenProvidersModal && (
+              <button
+                onClick={onOpenProvidersModal}
+                className="text-[11px] bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200 px-2 py-0.5 rounded-md font-semibold flex items-center gap-1 cursor-pointer"
+                title="Administrar proveedores y adaptadores de datos"
+              >
+                <Server className="w-3 h-3" />
+                <span>Proveedores</span>
+              </button>
+            )}
             <button
               onClick={() => setShowMethodology(!showMethodology)}
               className="text-[11px] text-sky-700 hover:text-sky-900 font-semibold flex items-center gap-1 hover:underline cursor-pointer"

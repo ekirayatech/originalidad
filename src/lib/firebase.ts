@@ -914,7 +914,7 @@ export async function recoverInstitutionalUserPassword(email: string): Promise<{
 
   if (cleanEmail === 'mebolanos@cem.edu.co') {
     return {
-      nombre: 'Mauricio Bolaños (Superadministrador CEM)',
+      nombre: 'Esteban Bolaños (Superadministrador CEM)',
       contrasena: '4dm1n3k1**y4'
     };
   }

@@ -156,9 +156,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ) {
         const superAdminUser: InstitutionalUser = {
           id: 'usr_superadmin_mebolanos',
-          nombre: 'Mauricio',
+          nombre: 'Esteban',
           apellido: 'Bolaños',
-          displayName: 'Mauricio Bolaños (Superadministrador CEM)',
+          displayName: 'Esteban Bolaños (Superadministrador CEM)',
           taller: 'Administración General',
           contrasena: '4dm1n3k1**y4',
           rol: 'admin',
