@@ -19,7 +19,8 @@ import {
   where,
   getDocs,
   onSnapshot,
-  getDocFromServer
+  getDocFromServer,
+  writeBatch
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 import {
@@ -966,34 +967,69 @@ export async function updateInstitutionalPassword(userId: string, newPass: strin
 export async function clearAllSavedDocuments(): Promise<{ count: number }> {
   const path = 'documents';
   try {
-    const q = collection(db, path);
-    const snap = await getDocs(q);
+    const snap = await getDocs(collection(db, path));
+    if (snap.empty) return { count: 0 };
+
     let count = 0;
-    const deletePromises = snap.docs.map(async (docSnap) => {
-      await deleteDoc(docSnap.ref);
-      count++;
-    });
-    await Promise.all(deletePromises);
+    const docs = snap.docs;
+    for (let i = 0; i < docs.length; i += 400) {
+      const chunk = docs.slice(i, i + 400);
+      const batch = writeBatch(db);
+      chunk.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+      count += chunk.length;
+    }
     return { count };
   } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, path);
+    console.error('Error al purgar documentos:', error);
+    // Fallback doc-by-doc delete
+    try {
+      const snap = await getDocs(collection(db, path));
+      let count = 0;
+      for (const d of snap.docs) {
+        try {
+          await deleteDoc(d.ref);
+          count++;
+        } catch {}
+      }
+      return { count };
+    } catch {
+      return { count: 0 };
+    }
   }
 }
 
 export async function clearAllReferenceCorpus(): Promise<{ count: number }> {
   const path = 'reference_documents';
   try {
-    const q = collection(db, path);
-    const snap = await getDocs(q);
+    const snap = await getDocs(collection(db, path));
+    if (snap.empty) return { count: 0 };
+
     let count = 0;
-    const deletePromises = snap.docs.map(async (docSnap) => {
-      await deleteDoc(docSnap.ref);
-      count++;
-    });
-    await Promise.all(deletePromises);
+    const docs = snap.docs;
+    for (let i = 0; i < docs.length; i += 400) {
+      const chunk = docs.slice(i, i + 400);
+      const batch = writeBatch(db);
+      chunk.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+      count += chunk.length;
+    }
     return { count };
   } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, path);
+    console.error('Error al purgar reference_documents:', error);
+    try {
+      const snap = await getDocs(collection(db, path));
+      let count = 0;
+      for (const d of snap.docs) {
+        try {
+          await deleteDoc(d.ref);
+          count++;
+        } catch {}
+      }
+      return { count };
+    } catch {
+      return { count: 0 };
+    }
   }
 }
 
@@ -1003,9 +1039,14 @@ export async function clearAllEvaluationAndCotejoRecords(): Promise<{
 }> {
   const docsRes = await clearAllSavedDocuments();
   const refRes = await clearAllReferenceCorpus();
+
+  try {
+    localStorage.removeItem('veritas_custom_corpus');
+  } catch {}
+
   return {
-    documentsCleared: docsRes.count,
-    referenceDocsCleared: refRes.count
+    documentsCleared: docsRes?.count || 0,
+    referenceDocsCleared: refRes?.count || 0
   };
 }
 

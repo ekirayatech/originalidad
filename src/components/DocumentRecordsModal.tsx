@@ -132,19 +132,17 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
     }
   };
 
-  const handlePurgeAll = async () => {
-    const confirmation = window.prompt(
-      '¿Deseas eliminar permanentemente TODOS los registros de análisis y cotejo guardados en Firebase?\n\nPara confirmar escribe "BORRAR":'
-    );
-    if (confirmation !== 'BORRAR') return;
+  const [confirmPurgeAllMode, setConfirmPurgeAllMode] = useState(false);
 
+  const handlePurgeAll = async () => {
     setIsPurging(true);
     try {
       const res = await clearAllEvaluationAndCotejoRecords();
       setStatusMessage(`✓ Se eliminaron todos los registros (${res.documentsCleared} evaluaciones).`);
+      setConfirmPurgeAllMode(false);
       setTimeout(() => setStatusMessage(null), 4000);
     } catch (err: any) {
-      alert(`Error al purgar registros: ${err?.message || err}`);
+      setStatusMessage(`Error al purgar registros: ${err?.message || err}`);
     } finally {
       setIsPurging(false);
     }
@@ -219,15 +217,36 @@ export const DocumentRecordsModal: React.FC<DocumentRecordsModalProps> = ({
           {/* Search box and purge button */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {isAdmin && documents.length > 0 && (
-              <button
-                onClick={handlePurgeAll}
-                disabled={isPurging}
-                className="flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg text-xs font-semibold cursor-pointer disabled:opacity-50"
-                title="Borrar todos los registros de la base de datos"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Borrar todo</span>
-              </button>
+              <>
+                {!confirmPurgeAllMode ? (
+                  <button
+                    onClick={() => setConfirmPurgeAllMode(true)}
+                    disabled={isPurging}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg text-xs font-semibold cursor-pointer disabled:opacity-50 shrink-0"
+                    title="Borrar todos los registros de la base de datos"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Borrar todo</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5 bg-rose-100 border border-rose-300 p-1 px-2 rounded-lg animate-in fade-in shrink-0">
+                    <span className="text-[10px] font-bold text-rose-900">¿Vaciar BD?</span>
+                    <button
+                      onClick={handlePurgeAll}
+                      disabled={isPurging}
+                      className="px-2 py-0.5 text-[10px] font-bold bg-rose-600 hover:bg-rose-700 text-white rounded cursor-pointer disabled:opacity-50"
+                    >
+                      {isPurging ? 'Borrando...' : 'SÍ, BORRAR TODO'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmPurgeAllMode(false)}
+                      className="px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-200 rounded cursor-pointer"
+                    >
+                      X
+                    </button>
+                  </div>
+                )}
+              </>
             )}
             <div className="relative flex-1 sm:w-60">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

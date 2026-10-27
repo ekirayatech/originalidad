@@ -272,16 +272,10 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
     }
   };
 
+  const [confirmPurgeMode, setConfirmPurgeMode] = useState(false);
+
   // Database purge handler ("Borra todos los registros")
   const handlePurgeAllRecords = async () => {
-    const confirmation = window.prompt(
-      'ADVERTENCIA CRÍTICA: ¿Estás seguro de que deseas borrar TODOS los registros de análisis y documentos de cotejo de Firebase?\n\nPara confirmar, escribe "BORRAR" a continuación:'
-    );
-
-    if (confirmation !== 'BORRAR') {
-      return;
-    }
-
     setIsPurgingRecords(true);
     setPurgeFeedback(null);
     try {
@@ -289,9 +283,10 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
       setPurgeFeedback(
         `✓ Base de datos purgada: se eliminaron ${res.documentsCleared} evaluaciones guardadas y ${res.referenceDocsCleared} documentos de la biblioteca de cotejo.`
       );
+      setConfirmPurgeMode(false);
       setTimeout(() => setPurgeFeedback(null), 6000);
     } catch (err: any) {
-      alert(`Error al limpiar registros: ${err?.message || err}`);
+      setPurgeFeedback(`Error al limpiar registros: ${err?.message || err}`);
     } finally {
       setIsPurgingRecords(false);
     }
@@ -1480,16 +1475,39 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
               <span>Sincronizado con Firebase Firestore</span>
             </div>
             {isAdmin && (
-              <button
-                type="button"
-                onClick={handlePurgeAllRecords}
-                disabled={isPurgingRecords}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer disabled:opacity-50"
-                title="Elimina todos los registros de cotejo y evaluaciones guardadas en Firebase"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                <span>{isPurgingRecords ? 'Borrando...' : 'Borrar todos los registros'}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {!confirmPurgeMode ? (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmPurgeMode(true)}
+                    disabled={isPurgingRecords}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer disabled:opacity-50"
+                    title="Elimina todos los registros de cotejo y evaluaciones guardadas en Firebase"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Borrar todos los registros</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5 bg-rose-100 border border-rose-300 p-1 px-2 rounded-lg animate-in fade-in">
+                    <span className="text-[10px] font-bold text-rose-900">¿Confirmar borrado total?</span>
+                    <button
+                      type="button"
+                      onClick={handlePurgeAllRecords}
+                      disabled={isPurgingRecords}
+                      className="px-2 py-0.5 text-[10px] font-bold bg-rose-600 hover:bg-rose-700 text-white rounded cursor-pointer disabled:opacity-50"
+                    >
+                      {isPurgingRecords ? 'Borrando...' : 'SÍ, BORRAR TODO'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmPurgeMode(false)}
+                      className="px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-200 rounded cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
           <button

@@ -15,7 +15,7 @@ import {
   Info
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { SUPERADMIN_EMAILS } from '../lib/firebase';
+import { SUPERADMIN_EMAILS, clearAllEvaluationAndCotejoRecords } from '../lib/firebase';
 
 interface AdminManagementModalProps {
   isOpen: boolean;
@@ -34,7 +34,28 @@ export const AdminManagementModal: React.FC<AdminManagementModalProps> = ({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const [isPurgingDatabase, setIsPurgingDatabase] = useState(false);
+  const [purgeSuccess, setPurgeSuccess] = useState<string | null>(null);
+  const [confirmPurgeMode, setConfirmPurgeMode] = useState(false);
+
   if (!isOpen) return null;
+
+  const handlePurgeDatabase = async () => {
+    setIsPurgingDatabase(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const res = await clearAllEvaluationAndCotejoRecords();
+      setPurgeSuccess(`✓ Base de datos purgada: ${res.documentsCleared} evaluaciones e historial eliminados de Firestore.`);
+      setConfirmPurgeMode(false);
+      setTimeout(() => setPurgeSuccess(null), 6000);
+    } catch (err: any) {
+      console.error('Error purgando base de datos:', err);
+      setErrorMsg(err.message || 'No se pudo purgar la base de datos.');
+    } finally {
+      setIsPurgingDatabase(false);
+    }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -338,6 +359,60 @@ export const AdminManagementModal: React.FC<AdminManagementModalProps> = ({
                 );
               })}
             </div>
+          </div>
+          {/* Database Purge Action Block for Administrators */}
+          <div className="pt-4 border-t border-slate-200 bg-rose-50/50 p-4 rounded-xl border border-rose-200/80">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h4 className="text-xs font-bold text-rose-950 flex items-center gap-1.5">
+                  <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>Vaciar Base de Datos de Evaluaciones y Cotejo</span>
+                </h4>
+                <p className="text-[11px] text-rose-800/80 mt-0.5">
+                  Elimina permanentemente los documentos e historial de prueba almacenados en Firestore.
+                </p>
+              </div>
+            {!confirmPurgeMode ? (
+              <button
+                onClick={() => setConfirmPurgeMode(true)}
+                disabled={isPurgingDatabase}
+                className="px-3.5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-60 shrink-0"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Borrar Documentos de Prueba</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 bg-rose-100 border border-rose-300 p-2 rounded-xl animate-in fade-in shrink-0">
+                <span className="text-xs font-bold text-rose-950">¿Confirmar borrado total?</span>
+                <button
+                  onClick={handlePurgeDatabase}
+                  disabled={isPurgingDatabase}
+                  className="px-3 py-1 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                >
+                  {isPurgingDatabase ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Purgando...</span>
+                    </>
+                  ) : (
+                    <span>SÍ, BORRAR TODO</span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setConfirmPurgeMode(false)}
+                  className="px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
+            </div>
+            {purgeSuccess && (
+              <div className="mt-2.5 p-2.5 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-lg text-xs font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{purgeSuccess}</span>
+              </div>
+            )}
           </div>
         </div>
 
