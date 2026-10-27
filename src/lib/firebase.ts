@@ -270,7 +270,7 @@ export async function syncUserProfile(user: FirebaseUser): Promise<UserProfile> 
 
   const cleanEmail = user.email?.toLowerCase().trim() || '';
   const isSuperAdmin = cleanEmail === 'mebolanos@cem.edu.co';
-  const defaultSuperName = 'Mauricio Bolaños (Superadministrador CEM)';
+  const defaultSuperName = 'Esteban Bolaños (Superadministrador CEM)';
 
   try {
     const existingDoc = await getDoc(userRef);

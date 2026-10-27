@@ -72,11 +72,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isSuperEmail = effectiveEmail === 'mebolanos@cem.edu.co';
 
   const effectiveDisplayName = isSuperEmail
-    ? 'Mauricio Bolaños (Superadministrador CEM)'
+    ? 'Esteban Bolaños (Superadministrador CEM)'
     : userProfile?.displayName || institutionalUser?.displayName || user?.displayName || 'Usuario Ekirayá';
 
   const effectiveFirstName = isSuperEmail
-    ? 'Mauricio'
+    ? 'Esteban'
     : (userProfile?.displayName?.split(' ')[0] || institutionalUser?.nombre || user?.displayName?.split(' ')[0] || 'Usuario');
 
   // Close dropdown on click outside
