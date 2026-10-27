@@ -192,7 +192,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {analysis && !isEditorOpen && (
+          {activeUser && analysis && !isEditorOpen && (
             <>
               {isAdmin && onOpenAuditModal && (
                 <button
@@ -230,22 +230,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             </>
           )}
 
-          <button
-            onClick={onNewDocument}
-            className="flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-white active:scale-95 text-slate-900 shadow-xs transition-all cursor-pointer"
-          >
-            {isEditorOpen ? (
-              <>
-                <FileText className="w-3.5 h-3.5 text-slate-700" />
-                <span>Ver Reporte</span>
-              </>
-            ) : (
-              <>
-                <PlusCircle className="w-3.5 h-3.5 text-slate-700" />
-                <span>Editar / Nuevo</span>
-              </>
-            )}
-          </button>
+          {activeUser && (
+            <button
+              onClick={onNewDocument}
+              className="flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-white active:scale-95 text-slate-900 shadow-xs transition-all cursor-pointer"
+            >
+              {isEditorOpen ? (
+                <>
+                  <FileText className="w-3.5 h-3.5 text-slate-700" />
+                  <span>Ver Reporte</span>
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="w-3.5 h-3.5 text-slate-700" />
+                  <span>Editar / Nuevo</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Compact Right Area for Mobile & Tablet + User Menu */}
@@ -544,25 +546,27 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            <button
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                onNewDocument();
-              }}
-              className="flex items-center gap-3 min-h-[46px] px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
-            >
-              {isEditorOpen ? (
-                <>
-                  <FileText className="w-4 h-4 text-slate-300 shrink-0" />
-                  <span>Ver Reporte de Originalidad</span>
-                </>
-              ) : (
-                <>
-                  <PlusCircle className="w-4 h-4 text-slate-300 shrink-0" />
-                  <span>Editar Texto / Nuevo Análisis</span>
-                </>
-              )}
-            </button>
+            {activeUser && (
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onNewDocument();
+                }}
+                className="flex items-center gap-3 min-h-[46px] px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
+              >
+                {isEditorOpen ? (
+                  <>
+                    <FileText className="w-4 h-4 text-slate-300 shrink-0" />
+                    <span>Ver Reporte de Originalidad</span>
+                  </>
+                ) : (
+                  <>
+                    <PlusCircle className="w-4 h-4 text-slate-300 shrink-0" />
+                    <span>Editar Texto / Nuevo Análisis</span>
+                  </>
+                )}
+              </button>
+            )}
 
             {isAdmin && (
               <button
@@ -624,7 +628,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {analysis && !isEditorOpen && (
+            {activeUser && analysis && !isEditorOpen && (
               <>
                 {onOpenAuditModal && (
                   <button

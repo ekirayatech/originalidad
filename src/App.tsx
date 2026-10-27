@@ -445,13 +445,15 @@ export default function App() {
                 >
                   <span>Normas y Embudo</span>
                 </button>
-                <button
-                  onClick={() => setIsEditorOpen(true)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-100 cursor-pointer"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Editar Texto</span>
-                </button>
+                {Boolean(user || institutionalUser) && (
+                  <button
+                    onClick={() => setIsEditorOpen(true)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-100 cursor-pointer"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Editar Texto</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
