@@ -403,6 +403,27 @@ export function exportAnalysisToPDF(analysis: AnalysisSummary, documentText?: st
 
   y += 15;
 
+  // 3.5. Citations & References Verification Summary
+  if (analysis.citationAnalysis) {
+    ensureSpace(16);
+    doc.setDrawColor(16, 185, 129); // Emerald-500
+    doc.setFillColor(240, 253, 244); // Emerald-50
+    doc.roundedRect(margin, y, contentWidth, 12, 2, 2, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.8);
+    doc.setTextColor(6, 78, 59); // Emerald-900
+    doc.text('VERIFICACIÓN DE CITAS Y REFERENCIAS BIBLIOGRÁFICAS', margin + 4, y + 4.8);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.8);
+    doc.setTextColor(51, 65, 85);
+    const citSummaryText = `Estilo Detectado: ${analysis.citationAnalysis.detectedStyle}  •  Salud de Citación: ${analysis.citationAnalysis.citationHealthScore}%  •  ${analysis.citationAnalysis.totalReferencesFound} referencias bibliográficas  •  ${analysis.citationAnalysis.totalInTextCitationsFound} citas en texto`;
+    doc.text(citSummaryText, margin + 4, y + 8.8);
+
+    y += 16;
+  }
+
   // 4. Sources Breakdown Table
   if (analysis.sources.length > 0) {
     ensureSpace(28);
